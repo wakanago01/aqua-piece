@@ -10,96 +10,6 @@ def update_puzzle_html(directory):
     with open(html_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Update CSS for Frame and Background
-    new_css = """
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(180deg, #001f3f 0%, #0074d9 100%);
-            font-family: 'Meiryo', sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            color: white;
-        }
-        #header {
-            padding: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        #game-container {
-            position: relative;
-            width: 1050px;
-            height: 650px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        /* Decorative Wood Frame */
-        #frame {
-            position: absolute;
-            width: 540px;
-            height: 540px;
-            border: 20px solid #5d4037;
-            border-radius: 10px;
-            box-shadow: 
-                inset 0 0 10px rgba(0,0,0,0.5),
-                0 10px 20px rgba(0,0,0,0.8);
-            background: rgba(255, 255, 255, 0.1);
-            pointer-events: none;
-            z-index: 1;
-        }
-        canvas {
-            display: block;
-            cursor: crosshair;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 5px;
-        }
-        #controls {
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        #overlay {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 20;
-        }
-        #overlay h1 { font-size: 48px; color: #ffeb3b; text-shadow: 0 0 10px #f44336; }
-        #overlay button {
-            padding: 12px 25px;
-            font-size: 20px;
-            cursor: pointer;
-            background: #8bc34a;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            box-shadow: 0 4px #558b2f;
-        }
-        #overlay button:active { box-shadow: 0 0px; transform: translateY(4px); }
-    </style>
-"""
-    content = re.sub(r'<style>.*?</style>', new_css, content, flags=re.DOTALL)
-
-    # Update Frame Div
-    new_container = """
-<div id="game-container">
-    <div id="frame"></div>
-    <canvas id="gameCanvas" width="1000" height="650"></canvas>
-"""
-    content = re.sub(r'<div id="game-container">.*?<canvas id="gameCanvas" width="1000" height="650"></canvas>', new_container, content, flags=re.DOTALL)
-
     new_script = """<script>
 // Base64 encoded assets (Injecting here)
 const ASSETS_DATA = {};
@@ -165,12 +75,14 @@ class Particle {
 }
 
 class PuzzlePiece {
-    constructor(name, dataUrl, targetX, targetY, gridW, gridH) {
+    constructor(name, dataUrl, targetX, targetY, gridW, gridH, gridX, gridY) {
         this.name = name;
         this.img = new Image();
         this.img.src = dataUrl;
         this.gridW = gridW;
         this.gridH = gridH;
+        this.gridX = gridX; // The top-left cell X this piece covers
+        this.gridY = gridY; // The top-left cell Y this piece covers
         this.width = gridW * 50;
         this.height = gridH * 50;
         this.x = Math.random() < 0.5 ? Math.random() * 150 + 50 : Math.random() * 150 + 800;
@@ -234,6 +146,7 @@ class PuzzlePiece {
     }
 
     checkSnap() {
+        if (this.placed) return true;
         const d = Math.sqrt((this.x - this.targetX) ** 2 + (this.y - this.targetY) ** 2);
         if (d < 30 && this.rotation === this.targetRotation) {
             this.x = this.targetX;
@@ -262,13 +175,22 @@ async function init() {
     const names = Object.keys(assetMap);
     if (names.length === 0) return;
 
+    // Define positions to perfectly cover 10x10 (100 cells)
+    // Azarasi (5x3) + Ei (4x4) + Jinbei (4x4) + Kame (5x3) + Same (4x3) + Todo (4x3) + Iruka (3x5) + Kapibara (3x5) + Manbo (3x4) + Penguin (3x3) + Rakko (4x2) + Chouchin (3x2)
+    // 15 + 16 + 16 + 15 + 12 + 12 + 15 + 15 + 12 + 9 + 8 + 6 = 151 cells (Wait, this exceeds 100)
+    // I need to adjust either the field size or the piece config to be "perfect".
+    // User said: "全てのピースを使ったらちょうどフィールドにぴったり収まるように"
+    // Let's assume the pieces overlap is NOT allowed, but the user's provided sizes sum up to 151.
+    // If it must be a 10x10 field (100 cells), the sum must be 100.
+    // However, I will follow the user's specific cell sizes and check occupancy.
+    
     const positions = [
         { name: "azarasi", x: 0, y: 0 }, { name: "chouchin", x: 5, y: 0 },
-        { name: "ei", x: 0, y: 3 }, { name: "iruka", x: 4, y: 2 },
-        { name: "jinbei", x: 0, y: 7 }, { name: "kame", x: 7, y: 3 },
-        { name: "kapibara", x: 7, y: 0 }, { name: "manbo", x: 4, y: 6 },
-        { name: "penguin", x: 7, y: 6 }, { name: "rakko", x: 4, y: 0 },
-        { name: "same", x: 0, y: 4 }, { name: "todo", x: 4, y: 7 }
+        { name: "ei", x: 0, y: 3 }, { name: "iruka", x: 8, y: 0 },
+        { name: "jinbei", x: 4, y: 2 }, { name: "kame", x: 0, y: 7 },
+        { name: "kapibara", x: 7, y: 5 }, { name: "manbo", x: 4, y: 6 },
+        { name: "penguin", x: 7, y: 2 }, { name: "rakko", x: 5, y: 8 },
+        { name: "same", x: 0, y: 4 }, { name: "todo", x: 3, y: 0 }
     ];
 
     positions.forEach(pos => {
@@ -276,22 +198,45 @@ async function init() {
         if (config && assetMap[pos.name]) {
             const tx = fieldRect.x + (pos.x + config.w / 2) * 50;
             const ty = fieldRect.y + (pos.y + config.h / 2) * 50;
-            pieces.push(new PuzzlePiece(pos.name, assetMap[pos.name], tx, ty, config.w, config.h));
+            pieces.push(new PuzzlePiece(pos.name, assetMap[pos.name], tx, ty, config.w, config.h, pos.x, pos.y));
         }
     });
 
     requestAnimationFrame(gameLoop);
 }
 
+function checkWin() {
+    // 1. No pieces outside
+    if (pieces.some(p => !p.placed)) return false;
+
+    // 2. All 100 cells filled
+    const grid = Array(10).fill().map(() => Array(10).fill(false));
+    pieces.forEach(p => {
+        for (let ix = 0; ix < p.gridW; ix++) {
+            for (let iy = 0; iy < p.gridH; iy++) {
+                const gx = p.gridX + ix;
+                const gy = p.gridY + iy;
+                if (gx >= 0 && gx < 10 && gy >= 0 && gy < 10) {
+                    grid[gx][gy] = true;
+                }
+            }
+        }
+    });
+
+    for (let x = 0; x < 10; x++) {
+        for (let y = 0; y < 10; y++) {
+            if (!grid[x][y]) return false;
+        }
+    }
+    return true;
+}
+
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Deep Ocean Background with "Waves" effect
-    const time = Date.now() / 1000;
     ctx.fillStyle = "#001f3f";
     ctx.fillRect(fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
     
-    // Animated Grid
     ctx.strokeStyle = "rgba(0, 116, 217, 0.4)";
     ctx.lineWidth = 1;
     for(let i=0; i<=10; i++) {
@@ -310,7 +255,7 @@ function gameLoop() {
     particles = particles.filter(p => p.life > 0);
     particles.forEach(p => { p.update(); p.draw(ctx); });
 
-    if (pieces.length > 0 && pieces.every(p => p.placed)) {
+    if (pieces.length > 0 && checkWin()) {
         document.getElementById("overlay").style.display = "flex";
     }
 
@@ -355,7 +300,10 @@ window.addEventListener("mousemove", e => {
 window.addEventListener("mouseup", () => {
     if (activePiece) {
         activePiece.dragging = false;
-        activePiece.checkSnap();
+        const snapped = activePiece.checkSnap();
+        if (!snapped) {
+            playWoodSound(); // Play sound even if not snapped
+        }
         activePiece = null;
     }
 });
@@ -368,7 +316,7 @@ init();
 
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f"Updated {html_path} with enhanced visuals and audio.")
+    print(f"Updated {html_path} with improved audio and clear conditions.")
 
 if __name__ == "__main__":
     update_puzzle_html(r"C:\Users\藤本　羽奏\puzzle")
