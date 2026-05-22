@@ -4,16 +4,25 @@ import json
 
 def generate_base64_assets(directory):
     assets = {}
-    files = [f for f in os.listdir(directory) if f.endswith('.png')]
-    for filename in files:
+    # Image assets
+    image_files = [f for f in os.listdir(directory) if f.endswith('.png')]
+    for filename in image_files:
         filepath = os.path.join(directory, filename)
         with open(filepath, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
             assets[os.path.splitext(filename)[0]] = f"data:image/png;base64,{encoded_string}"
     
+    # Audio assets
+    audio_files = [f for f in os.listdir(directory) if f.endswith('.mp3')]
+    for filename in audio_files:
+        filepath = os.path.join(directory, filename)
+        with open(filepath, "rb") as audio_file:
+            encoded_string = base64.b64encode(audio_file.read()).decode('utf-8')
+            assets[os.path.splitext(filename)[0]] = f"data:audio/mp3;base64,{encoded_string}"
+    
     with open(os.path.join(directory, "assets_data.json"), "w") as f:
         json.dump(assets, f)
-    print("Generated assets_data.json with Base64 strings.")
+    print("Generated assets_data.json with Base64 strings for images and audio.")
 
 if __name__ == "__main__":
     target_dir = r"C:\Users\藤本　羽奏\puzzle"

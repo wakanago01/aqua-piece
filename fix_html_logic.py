@@ -29,27 +29,19 @@ const PIECE_CONFIG = {
     "todo": { w: 4, h: 3 }
 };
 
-// Sound Generator
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-
-function playWoodSound() {
-    if (!audioCtx) audioCtx = new AudioCtx();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+// Sound Management
+function playSound(type) {
+    let dataUrl = "";
+    if (type === 'place') {
+        dataUrl = ASSETS_DATA["グラスを置く"];
+    } else if (type === 'rotate') {
+        dataUrl = ASSETS_DATA["ロッカーを開ける1"];
+    }
     
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
-    
-    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-    
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.1);
+    if (dataUrl) {
+        const audio = new Audio(dataUrl);
+        audio.play().catch(e => console.error("Sound play failed:", e));
+    }
 }
 
 class Particle {
@@ -57,47 +49,103 @@ class Particle {
         this.x = x;
         this.y = y;
         this.color = color;
-        this.vx = (Math.random() - 0.5) * 10;
-        this.vy = (Math.random() - 0.5) * 10;
+        this.vx = (Math.random() - 0.5) * 8;
+        this.vy = (Math.random() - 0.5) * 8;
         this.life = 1.0;
     }
     update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.life -= 0.05;
+        this.life -= 0.04;
     }
     draw(ctx) {
         ctx.fillStyle = `rgba(255, 255, 255, ${this.life})`;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
         ctx.fill();
     }
 }
 
 class PuzzlePiece {
-    constructor(name, dataUrl, targetX, targetY, gridW, gridH, gridX, gridY) {
+    constructor(name, dataUrl, gridW, gridH) {
         this.name = name;
         this.img = new Image();
         this.img.src = dataUrl;
         this.gridW = gridW;
         this.gridH = gridH;
-        this.gridX = gridX; // The top-left cell X this piece covers
-        this.gridY = gridY; // The top-left cell Y this piece covers
         this.width = gridW * 50;
         this.height = gridH * 50;
-        this.x = Math.random() < 0.5 ? Math.random() * 150 + 50 : Math.random() * 150 + 800;
-        this.y = Math.random() * 450 + 100;
-        this.targetX = targetX;
-        this.targetY = targetY;
+        
+        // Random start position outside field
+        this.x = Math.random() < 0.5 ? Math.random() * 100 + 50 : Math.random() * 100 + 850;
+        this.y = Math.random() * 400 + 100;
+        
         this.rotation = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
-        this.targetRotation = 0;
         this.placed = false;
         this.dragging = false;
-        this.offsetX = 0;
-        this.offsetY = 0;
-        this.hitCanvas = document.createElement('canvas');
-        this.hitCtx = this.hitCanvas.getContext('2d', { willReadFrequently: true });
+        this.gridX = -1; // Current snapped grid X (0-9)
+        this.gridY = -1; // Current snapped grid Y (0-9)
+        
+        this.shapeMap = []; // 2D array [rotation_index][cell_y][cell_x] = bool
         this.snapEffect = 0;
+        
+        this.img.onload = () => {
+            this.analyzeShape();
+        };
+    }
+
+    // Analyze which 50x50 cells are occupied by non-transparent pixels
+    analyzeShape() {
+        const canvas = document.createElement('canvas');
+        canvas.width = this.width;
+        canvas.height = this.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(this.img, 0, 0, this.width, this.height);
+        
+        // Define base shape at 0 degrees
+        const baseShape = [];
+        for (let gy = 0; gy < this.gridH; gy++) {
+            const row = [];
+            for (let gx = 0; gx < this.gridW; gx++) {
+                const imageData = ctx.getImageData(gx * 50, gy * 50, 50, 50).data;
+                let occupied = false;
+                // Sample some pixels in the cell
+                for (let i = 3; i < imageData.length; i += 16) { 
+                    if (imageData[i] > 50) { occupied = true; break; }
+                }
+                row.push(occupied);
+            }
+            baseShape.push(row);
+        }
+
+        // Generate rotated maps
+        this.shapeMap = [baseShape]; // 0 deg
+        for (let r = 1; r < 4; r++) {
+            const prev = this.shapeMap[r-1];
+            const rotated = [];
+            const newW = prev.length;
+            const newH = prev[0].length;
+            for (let y = 0; y < newH; y++) {
+                const row = [];
+                for (let x = 0; x < newW; x++) {
+                    row.push(prev[newW - 1 - x][y]);
+                }
+                rotated.push(row);
+            }
+            this.shapeMap.push(rotated);
+        }
+    }
+
+    getRotatedGridDim() {
+        const rotIdx = (this.rotation / 90) % 4;
+        const shape = this.shapeMap[rotIdx];
+        if (!shape) return { w: this.gridW, h: this.gridH };
+        return { w: shape[0].length, h: shape.length };
+    }
+
+    getCurrentShape() {
+        const rotIdx = (this.rotation / 90) % 4;
+        return this.shapeMap[rotIdx] || [];
     }
 
     draw(ctx) {
@@ -127,7 +175,6 @@ class PuzzlePiece {
     }
 
     isHit(mx, my) {
-        if (this.placed) return false;
         const dx = mx - this.x;
         const dy = my - this.y;
         const angle = (-this.rotation * Math.PI) / 180;
@@ -135,31 +182,42 @@ class PuzzlePiece {
         const localY = dx * Math.sin(angle) + dy * Math.cos(angle);
         const halfW = this.width / 2;
         const halfH = this.height / 2;
+        
         if (localX >= -halfW && localX <= halfW && localY >= -halfH && localY <= halfH) {
-            this.hitCanvas.width = this.width;
-            this.hitCanvas.height = this.height;
-            this.hitCtx.drawImage(this.img, 0, 0, this.width, this.height);
-            const pixel = this.hitCtx.getImageData(localX + halfW, localY + halfH, 1, 1).data;
-            return pixel[3] > 10;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = 1; tempCanvas.height = 1;
+            const tctx = tempCanvas.getContext('2d');
+            tctx.drawImage(this.img, localX + halfW, localY + halfH, 1, 1, 0, 0, 1, 1);
+            return tctx.getImageData(0, 0, 1, 1).data[3] > 10;
         }
         return false;
     }
 
-    checkSnap() {
-        if (this.placed) return true;
-        const d = Math.sqrt((this.x - this.targetX) ** 2 + (this.y - this.targetY) ** 2);
-        if (d < 30 && this.rotation === this.targetRotation) {
-            this.x = this.targetX;
-            this.y = this.targetY;
+    snapToGrid(fieldRect) {
+        // Find nearest grid cell for the top-left corner
+        const { w, h } = this.getRotatedGridDim();
+        const topLeftX = this.x - (w * 50) / 2;
+        const topLeftY = this.y - (h * 50) / 2;
+        
+        const gx = Math.round((topLeftX - fieldRect.x) / 50);
+        const gy = Math.round((topLeftY - fieldRect.y) / 50);
+        
+        // If within field-ish bounds
+        if (gx >= -1 && gx < 10 && gy >= -1 && gy < 10) {
+            this.gridX = gx;
+            this.gridY = gy;
+            this.x = fieldRect.x + gx * 50 + (w * 50) / 2;
+            this.y = fieldRect.y + gy * 50 + (h * 50) / 2;
             this.placed = true;
             this.snapEffect = 1.0;
-            playWoodSound();
-            for (let i = 0; i < 15; i++) {
-                particles.push(new Particle(this.x, this.y, '#fff'));
-            }
-            return true;
+            playSound('place');
+            for (let i = 0; i < 10; i++) particles.push(new Particle(this.x, this.y));
+        } else {
+            this.placed = false;
+            this.gridX = -1;
+            this.gridY = -1;
+            playSound('place');
         }
-        return false;
     }
 }
 
@@ -172,57 +230,45 @@ let activePiece = null;
 
 async function init() {
     const assetMap = ASSETS_DATA;
-    const names = Object.keys(assetMap);
-    if (names.length === 0) return;
-
-    // Define positions to perfectly cover 10x10 (100 cells)
-    // Azarasi (5x3) + Ei (4x4) + Jinbei (4x4) + Kame (5x3) + Same (4x3) + Todo (4x3) + Iruka (3x5) + Kapibara (3x5) + Manbo (3x4) + Penguin (3x3) + Rakko (4x2) + Chouchin (3x2)
-    // 15 + 16 + 16 + 15 + 12 + 12 + 15 + 15 + 12 + 9 + 8 + 6 = 151 cells (Wait, this exceeds 100)
-    // I need to adjust either the field size or the piece config to be "perfect".
-    // User said: "全てのピースを使ったらちょうどフィールドにぴったり収まるように"
-    // Let's assume the pieces overlap is NOT allowed, but the user's provided sizes sum up to 151.
-    // If it must be a 10x10 field (100 cells), the sum must be 100.
-    // However, I will follow the user's specific cell sizes and check occupancy.
+    const names = Object.keys(assetMap).filter(n => PIECE_CONFIG[n]);
     
-    const positions = [
-        { name: "azarasi", x: 0, y: 0 }, { name: "chouchin", x: 5, y: 0 },
-        { name: "ei", x: 0, y: 3 }, { name: "iruka", x: 8, y: 0 },
-        { name: "jinbei", x: 4, y: 2 }, { name: "kame", x: 0, y: 7 },
-        { name: "kapibara", x: 7, y: 5 }, { name: "manbo", x: 4, y: 6 },
-        { name: "penguin", x: 7, y: 2 }, { name: "rakko", x: 5, y: 8 },
-        { name: "same", x: 0, y: 4 }, { name: "todo", x: 3, y: 0 }
-    ];
-
-    positions.forEach(pos => {
-        const config = PIECE_CONFIG[pos.name];
-        if (config && assetMap[pos.name]) {
-            const tx = fieldRect.x + (pos.x + config.w / 2) * 50;
-            const ty = fieldRect.y + (pos.y + config.h / 2) * 50;
-            pieces.push(new PuzzlePiece(pos.name, assetMap[pos.name], tx, ty, config.w, config.h, pos.x, pos.y));
-        }
+    names.forEach(name => {
+        const config = PIECE_CONFIG[name];
+        pieces.push(new PuzzlePiece(name, assetMap[name], config.w, config.h));
     });
 
     requestAnimationFrame(gameLoop);
 }
 
 function checkWin() {
-    // 1. No pieces outside
-    if (pieces.some(p => !p.placed)) return false;
-
-    // 2. All 100 cells filled
     const grid = Array(10).fill().map(() => Array(10).fill(false));
-    pieces.forEach(p => {
-        for (let ix = 0; ix < p.gridW; ix++) {
-            for (let iy = 0; iy < p.gridH; iy++) {
-                const gx = p.gridX + ix;
-                const gy = p.gridY + iy;
-                if (gx >= 0 && gx < 10 && gy >= 0 && gy < 10) {
+    let piecesOnGrid = 0;
+    
+    for (const p of pieces) {
+        if (!p.placed) continue;
+        const shape = p.getCurrentShape();
+        const { w, h } = p.getRotatedGridDim();
+        
+        for (let ry = 0; ry < h; ry++) {
+            for (let rx = 0; rx < w; rx++) {
+                if (shape[ry][rx]) {
+                    const gx = p.gridX + rx;
+                    const gy = p.gridY + ry;
+                    // Check if piece is partially outside
+                    if (gx < 0 || gx >= 10 || gy < 0 || gy >= 10) return false;
+                    // Check overlap
+                    if (grid[gx][gy]) return false; // Overlap detected
                     grid[gx][gy] = true;
                 }
             }
         }
-    });
+        piecesOnGrid++;
+    }
 
+    // Must use all pieces
+    if (piecesOnGrid < pieces.length) return false;
+
+    // Check if all 100 cells are filled
     for (let x = 0; x < 10; x++) {
         for (let y = 0; y < 10; y++) {
             if (!grid[x][y]) return false;
@@ -251,7 +297,6 @@ function gameLoop() {
     }
 
     pieces.forEach(p => p.draw(ctx));
-    
     particles = particles.filter(p => p.life > 0);
     particles.forEach(p => { p.update(); p.draw(ctx); });
 
@@ -271,6 +316,7 @@ canvas.addEventListener("mousedown", e => {
             if (pieces[i].isHit(mx, my)) {
                 activePiece = pieces[i];
                 activePiece.dragging = true;
+                activePiece.placed = false;
                 activePiece.offsetX = activePiece.x - mx;
                 activePiece.offsetY = activePiece.y - my;
                 pieces.push(pieces.splice(i, 1)[0]);
@@ -281,8 +327,8 @@ canvas.addEventListener("mousedown", e => {
         for (let i = pieces.length - 1; i >= 0; i--) {
             if (pieces[i].isHit(mx, my)) {
                 pieces[i].rotation = (pieces[i].rotation + 90) % 360;
-                playWoodSound();
-                pieces[i].checkSnap();
+                playSound('rotate');
+                if (pieces[i].placed) pieces[i].snapToGrid(fieldRect);
                 break;
             }
         }
@@ -300,10 +346,7 @@ window.addEventListener("mousemove", e => {
 window.addEventListener("mouseup", () => {
     if (activePiece) {
         activePiece.dragging = false;
-        const snapped = activePiece.checkSnap();
-        if (!snapped) {
-            playWoodSound(); // Play sound even if not snapped
-        }
+        activePiece.snapToGrid(fieldRect);
         activePiece = null;
     }
 });
@@ -316,7 +359,7 @@ init();
 
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f"Updated {html_path} with improved audio and clear conditions.")
+    print(f"Updated {html_path} with shape-aware grid logic and dynamic snapping.")
 
 if __name__ == "__main__":
     update_puzzle_html(r"C:\Users\藤本　羽奏\puzzle")
