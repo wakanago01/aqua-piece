@@ -189,7 +189,6 @@ class PuzzlePiece {
         this.gridH = gridH;
         this.width = gridW * 50;
         this.height = gridH * 50;
-        
         const side = Math.random() < 0.5 ? 'left' : 'right';
         if (side === 'left') {
             this.x = Math.random() * 150 + 50;
@@ -197,7 +196,6 @@ class PuzzlePiece {
             this.x = Math.random() * 150 + 800;
         }
         this.y = Math.random() * 450 + 100;
-        
         this.rotation = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
         this.placed = false;
         this.dragging = false;
@@ -220,13 +218,12 @@ class PuzzlePiece {
             for (let gx = 0; gx < this.gridW; gx++) {
                 const imageData = ctx.getImageData(gx * 50, gy * 50, 50, 50).data;
                 let solidPixels = 0;
-                // Count pixels with significant opacity
                 for (let i = 3; i < imageData.length; i += 4) { 
-                    if (imageData[i] > 20) solidPixels++;
+                    if (imageData[i] > 50) solidPixels++; // Higher alpha threshold for detection
                 }
-                // A cell is "occupied" if more than 5% of its pixels are solid
-                // This makes it robust to stray semi-transparent pixels
-                row.push(solidPixels > (50 * 50 * 0.05));
+                // EXTREMELY STRICT: Increased threshold to 25% of the cell
+                // This eliminates 'fringe' cells that only have a tiny bit of anti-aliasing or overlap
+                row.push(solidPixels > (50 * 50 * 0.25));
             }
             baseShape.push(row);
         }
@@ -290,14 +287,12 @@ class PuzzlePiece {
         const localY = dx * Math.sin(angle) + dy * Math.cos(angle);
         const halfW = this.width / 2;
         const halfH = this.height / 2;
-        
         if (localX >= -halfW && localX <= halfW && localY >= -halfH && localY <= halfH) {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = 1; tempCanvas.height = 1;
             const tctx = tempCanvas.getContext('2d');
             tctx.drawImage(this.img, localX + halfW, localY + halfH, 1, 1, 0, 0, 1, 1);
-            const threshold = (this.name === 'kame' || this.name === 'azarasi') ? 1 : 3;
-            return tctx.getImageData(0, 0, 1, 1).data[3] > threshold;
+            return tctx.getImageData(0, 0, 1, 1).data[3] > 30;
         }
         return false;
     }
@@ -308,8 +303,6 @@ class PuzzlePiece {
         const topLeftY = this.y - (h * 50) / 2;
         const gx = Math.round((topLeftX - fieldRect.x) / 50);
         const gy = Math.round((topLeftY - fieldRect.y) / 50);
-        
-        // Snapping within grid bounds
         if (gx >= 0 && gx <= 10 - w && gy >= 0 && gy <= 10 - h) {
             this.gridX = gx;
             this.gridY = gy;
@@ -359,14 +352,10 @@ async function init() {
 }
 
 function checkWin() {
-    const grid = Array(10).fill().map(() => Array(10).fill(0)); // Count per cell
+    const grid = Array(10).fill().map(() => Array(10).fill(0));
     let allPlaced = true;
-    
     for (const p of pieces) {
-        if (!p.placed) {
-            allPlaced = false;
-            continue;
-        }
+        if (!p.placed) { allPlaced = false; continue; }
         const shape = p.getCurrentShape();
         const { w, h } = p.getRotatedGridDim();
         for (let ry = 0; ry < h; ry++) {
@@ -374,22 +363,14 @@ function checkWin() {
                 if (shape[ry][rx]) {
                     const gx = p.gridX + rx;
                     const gy = p.gridY + ry;
-                    if (gx >= 0 && gx < 10 && gy >= 0 && gy < 10) {
-                        grid[gx][gy]++;
-                    } else {
-                        // Part of the piece is logically outside despite snapping?
-                        allPlaced = false;
-                    }
+                    if (gx >= 0 && gx < 10 && gy >= 0 && gy < 10) grid[gx][gy]++;
+                    else allPlaced = false;
                 }
             }
         }
     }
-
-    debugGrid = grid; // Save for drawing debug info
-
+    debugGrid = grid;
     if (!allPlaced) return false;
-
-    // Check if every cell has exactly 1 solid part
     for (let x = 0; x < 10; x++) {
         for (let y = 0; y < 10; y++) {
             if (grid[x][y] !== 1) return false;
@@ -400,30 +381,24 @@ function checkWin() {
 
 function gameLoop() {
     if (isCleared) return;
-    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
     const elapsed = Date.now() - startTime;
     document.getElementById('timer-display').innerText = `時間: ${formatTime(elapsed)}`;
-
     ctx.fillStyle = "#001f3f";
     ctx.fillRect(fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
-    
-    // Draw grid occupancy debug (Optional visual aid)
     if (debugGrid.length > 0) {
         for (let x = 0; x < 10; x++) {
             for (let y = 0; y < 10; y++) {
                 if (debugGrid[x][y] === 0) {
-                    ctx.fillStyle = "rgba(255, 0, 0, 0.1)"; // Empty
+                    ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
                     ctx.fillRect(fieldRect.x + x*50, fieldRect.y + y*50, 50, 50);
                 } else if (debugGrid[x][y] > 1) {
-                    ctx.fillStyle = "rgba(255, 255, 0, 0.2)"; // Overlap
+                    ctx.fillStyle = "rgba(255, 255, 0, 0.2)";
                     ctx.fillRect(fieldRect.x + x*50, fieldRect.y + y*50, 50, 50);
                 }
             }
         }
     }
-
     ctx.strokeStyle = "rgba(0, 116, 217, 0.4)";
     ctx.lineWidth = 1;
     for(let i=0; i<=10; i++) {
@@ -439,13 +414,11 @@ function gameLoop() {
     pieces.forEach(p => p.draw(ctx));
     particles = particles.filter(p => p.life > 0);
     particles.forEach(p => { p.update(); p.draw(ctx); });
-
     if (pieces.length > 0 && checkWin()) {
         isCleared = true;
         document.getElementById('clear-time-text').innerText = `タイム: ${formatTime(elapsed)}`;
         document.getElementById("overlay").style.display = "flex";
     }
-
     requestAnimationFrame(gameLoop);
 }
 
