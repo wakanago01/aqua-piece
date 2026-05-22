@@ -24,7 +24,7 @@
         #game-container {
             position: relative;
             width: 1000px;
-            height: 600px;
+            height: 650px;
             background: rgba(255, 255, 255, 0.2);
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -70,7 +70,7 @@
 </div>
 
 <div id="game-container">
-    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+    <canvas id="gameCanvas" width="1000" height="650"></canvas>
     <div id="overlay" style="display:none;">
         <h1>全クリア！おめでとうございます！</h1>
         <button onclick="location.reload()">もう一度遊ぶ</button>
@@ -91,27 +91,17 @@ class PuzzlePiece {
         this.img = new Image();
         this.img.src = dataUrl;
         this.x = Math.random() < 0.5 ? Math.random() * 150 + 20 : Math.random() * 150 + 830;
-        this.y = Math.random() * 500 + 50;
+        this.y = Math.random() * 550 + 50;
         this.targetX = targetX;
         this.targetY = targetY;
         this.rotation = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
         this.targetRotation = 0;
         this.placed = false;
         this.dragging = false;
-        this.width = 0;
-        this.height = 0;
+        this.width = 50;
+        this.height = 50;
         this.offsetX = 0;
         this.offsetY = 0;
-
-        this.img.onload = () => {
-            const max = 120;
-            let scale = 1;
-            if (this.img.width > max || this.img.height > max) {
-                scale = max / Math.max(this.img.width, this.img.height);
-            }
-            this.width = this.img.width * scale;
-            this.height = this.img.height * scale;
-        };
     }
 
     draw(ctx) {
@@ -137,14 +127,15 @@ class PuzzlePiece {
 
     isHit(mx, my) {
         if (this.placed) return false;
-        // Simple circular hit test for simplicity in web version
-        const dist = Math.sqrt((mx - this.x) ** 2 + (my - this.y) ** 2);
-        return dist < Math.max(this.width, this.height) / 2;
+        const halfW = this.width / 2;
+        const halfH = this.height / 2;
+        return mx >= this.x - halfW && mx <= this.x + halfW &&
+               my >= this.y - halfH && my <= this.y + halfH;
     }
 
     checkSnap() {
         const d = Math.sqrt((this.x - this.targetX) ** 2 + (this.y - this.targetY) ** 2);
-        if (d < 30 && this.rotation === this.targetRotation) {
+        if (d < 25 && this.rotation === this.targetRotation) {
             this.x = this.targetX;
             this.y = this.targetY;
             this.placed = true;
@@ -156,7 +147,7 @@ class PuzzlePiece {
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const fieldRect = { x: 250, y: 50, width: 500, height: 500 };
+const fieldRect = { x: 250, y: 75, width: 500, height: 500 };
 let pieces = [];
 let activePiece = null;
 
@@ -164,18 +155,19 @@ async function init() {
     const assetMap = ASSETS_DATA;
     
     const names = Object.keys(assetMap);
-    const cols = 4;
-    const rows = 3;
+    const cols = 10;
+    const rows = 10;
     const cellW = fieldRect.width / cols;
     const cellH = fieldRect.height / rows;
 
-    names.forEach((name, i) => {
+    for (let i = 0; i < 100; i++) {
+        const name = names[i % names.length];
         const col = i % cols;
         const row = Math.floor(i / cols);
         const tx = fieldRect.x + (col + 0.5) * cellW;
         const ty = fieldRect.y + (row + 0.5) * cellH;
         pieces.push(new PuzzlePiece(name, assetMap[name], tx, ty));
-    });
+    }
 
     requestAnimationFrame(gameLoop);
 }
@@ -193,16 +185,16 @@ function gameLoop() {
     // Grid lines
     ctx.strokeStyle = '#c8dcf0';
     ctx.lineWidth = 1;
-    for(let i=1; i<4; i++) {
+    for(let i=1; i<10; i++) {
         ctx.beginPath();
-        ctx.moveTo(fieldRect.x + i * fieldRect.width/4, fieldRect.y);
-        ctx.lineTo(fieldRect.x + i * fieldRect.width/4, fieldRect.y + fieldRect.height);
+        ctx.moveTo(fieldRect.x + i * fieldRect.width/10, fieldRect.y);
+        ctx.lineTo(fieldRect.x + i * fieldRect.width/10, fieldRect.y + fieldRect.height);
         ctx.stroke();
     }
-    for(let i=1; i<3; i++) {
+    for(let i=1; i<10; i++) {
         ctx.beginPath();
-        ctx.moveTo(fieldRect.x, fieldRect.y + i * fieldRect.height/3);
-        ctx.lineTo(fieldRect.x + fieldRect.width, fieldRect.y + i * fieldRect.height/3);
+        ctx.moveTo(fieldRect.x, fieldRect.y + i * fieldRect.height/10);
+        ctx.lineTo(fieldRect.x + fieldRect.width, fieldRect.y + i * fieldRect.height/10);
         ctx.stroke();
     }
 
