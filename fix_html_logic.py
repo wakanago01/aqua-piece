@@ -10,7 +10,6 @@ def update_puzzle_html(directory):
     with open(html_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Update script with even stricter shape analysis specifically for the grid occupancy
     new_script = """<script>
 // Base64 encoded assets (Injecting here)
 const ASSETS_DATA = {};
@@ -103,10 +102,8 @@ class PuzzlePiece {
                 const imageData = ctx.getImageData(gx * 50, gy * 50, 50, 50).data;
                 let solidPixels = 0;
                 for (let i = 3; i < imageData.length; i += 4) { 
-                    if (imageData[i] > 50) solidPixels++; // Higher alpha threshold for detection
+                    if (imageData[i] > 50) solidPixels++;
                 }
-                // EXTREMELY STRICT: Increased threshold to 25% of the cell
-                // This eliminates 'fringe' cells that only have a tiny bit of anti-aliasing or overlap
                 row.push(solidPixels > (50 * 50 * 0.25));
             }
             baseShape.push(row);
@@ -270,19 +267,32 @@ function gameLoop() {
     document.getElementById('timer-display').innerText = `時間: ${formatTime(elapsed)}`;
     ctx.fillStyle = "#001f3f";
     ctx.fillRect(fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
+
+    const pulse = (Math.sin(Date.now() / 200) + 1) / 2;
     if (debugGrid.length > 0) {
         for (let x = 0; x < 10; x++) {
             for (let y = 0; y < 10; y++) {
+                const gx = fieldRect.x + x * 50;
+                const gy = fieldRect.y + y * 50;
                 if (debugGrid[x][y] === 0) {
-                    ctx.fillStyle = "rgba(255, 0, 0, 0.1)";
-                    ctx.fillRect(fieldRect.x + x*50, fieldRect.y + y*50, 50, 50);
+                    // Gap: Pastel Blue (No pulsing)
+                    ctx.fillStyle = "rgba(174, 214, 241, 0.4)"; // Soft Pastel Blue
+                    ctx.fillRect(gx + 2, gy + 2, 46, 46);
+                    ctx.strokeStyle = "rgba(174, 214, 241, 0.8)";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(gx + 4, gy + 4, 42, 42);
                 } else if (debugGrid[x][y] > 1) {
-                    ctx.fillStyle = "rgba(255, 255, 0, 0.2)";
-                    ctx.fillRect(fieldRect.x + x*50, fieldRect.y + y*50, 50, 50);
+                    // Overlap: Yellow pulsing
+                    ctx.fillStyle = `rgba(255, 255, 0, ${0.4 + pulse * 0.3})`;
+                    ctx.fillRect(gx + 2, gy + 2, 46, 46);
+                    ctx.strokeStyle = "rgba(255, 215, 0, 0.9)";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(gx + 4, gy + 4, 42, 42);
                 }
             }
         }
     }
+
     ctx.strokeStyle = "rgba(0, 116, 217, 0.4)";
     ctx.lineWidth = 1;
     for(let i=0; i<=10; i++) {
@@ -359,7 +369,7 @@ init();
 
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f"Updated {html_path} with stricter occupancy thresholds for kapibara and manbo.")
+    print(f"Updated {html_path} with pastel blue gap guides.")
 
 if __name__ == "__main__":
     update_puzzle_html(r"C:\Users\藤本　羽奏\puzzle")
