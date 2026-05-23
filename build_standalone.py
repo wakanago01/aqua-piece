@@ -14,7 +14,7 @@ def create_standalone_html(directory):
     # Use robust searching for the constant declaration
     placeholder = "const ASSETS_DATA = {}; // ASSETS_DATA_PLACEHOLDER"
     if placeholder in html_content:
-        new_content = html_content.replace(placeholder, f"const ASSETS_DATA = {assets_json};")
+        new_content = html_content.replace(placeholder, "const ASSETS_DATA = " + assets_json + ";")
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(new_content)
         print(f"Updated HTML with assets: {html_path}")

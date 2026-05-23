@@ -5,12 +5,17 @@ import json
 def generate_base64_assets(directory):
     assets = {}
     # Image assets
-    image_files = [f for f in os.listdir(directory) if f.endswith('.png')]
+    image_files = [f for f in os.listdir(directory) if f.endswith('.png') or f.endswith('.jpg')]
     for filename in image_files:
         filepath = os.path.join(directory, filename)
         with open(filepath, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-            assets[os.path.splitext(filename)[0]] = f"data:image/png;base64,{encoded_string}"
+            ext = os.path.splitext(filename)[1].lower()
+            mime = "image/png" if ext == ".png" else "image/jpeg"
+            # Prioritize PNG by checking if it already exists in the dict
+            name = os.path.splitext(filename)[0]
+            if name not in assets or ext == ".png":
+                assets[name] = f"data:{mime};base64,{encoded_string}"
     
     # Audio assets
     audio_files = [f for f in os.listdir(directory) if f.endswith('.mp3')]
