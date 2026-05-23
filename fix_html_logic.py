@@ -71,26 +71,35 @@ def update_puzzle_html(directory):
         #title-logo {
             position: relative;
             width: fit-content;
-            height: 120px;
+            height: 180px;
             display: flex; justify-content: center; align-items: center;
-            gap: 15px;
+            gap: 20px;
             background: rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
-            padding: 30px 40px;
+            border-radius: 30px;
+            padding: 40px 60px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             margin-bottom: 60px;
         }
         .logo-waku {
-            width: 80px; height: 80px;
+            width: 100px; height: 100px;
             opacity: 0.25;
             filter: grayscale(100%) brightness(1.2);
             transition: opacity 0.5s, filter 0.5s;
             pointer-events: none;
             object-fit: contain;
+            border: 4px dashed #0369a1;
+            border-radius: 50%;
+            padding: 10px;
+        }
+        .logo-waku:nth-child(even) {
+            transform: translateY(25px);
+        }
+        .logo-waku:nth-child(odd) {
+            transform: translateY(-25px);
         }
         .logo-piece {
             position: absolute;
-            width: 80px; height: 80px;
+            width: 100px; height: 100px;
             cursor: grab;
             z-index: 10010;
             filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
@@ -269,11 +278,13 @@ function makeLogoDraggable(elm, container) {
                     const r1 = elm.getBoundingClientRect(), r2 = waku.getBoundingClientRect();
                     const cx1 = r1.left + r1.width/2, cy1 = r1.top + r1.height/2;
                     const cx2 = r2.left + r2.width/2, cy2 = r2.top + r2.height/2;
-                    if (Math.sqrt(Math.pow(cx1-cx2,2)+Math.pow(cy1-cy2,2)) < 50) {
+                    if (Math.sqrt(Math.pow(cx1-cx2,2)+Math.pow(cy1-cy2,2)) < 60) {
                         // Reparent to container to keep position fixed relative to frames
                         container.appendChild(elm);
-                        elm.style.left = waku.offsetLeft + "px";
-                        elm.style.top = waku.offsetTop + "px";
+                        // Using getBoundingClientRect to find exact center relative to container
+                        const cRect = container.getBoundingClientRect();
+                        elm.style.left = (r2.left - cRect.left) + "px";
+                        elm.style.top = (r2.top - cRect.top) + "px";
                         elm.classList.add('placed');
                         elm.onmousedown = null;
                         waku.style.opacity = "1"; waku.style.filter = "none"; waku.dataset.filled = "true";
