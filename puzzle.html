@@ -326,11 +326,13 @@ function gameLoop() {
             }
         }
     }
-    ctx.strokeStyle = "rgba(186, 230, 253, 0.5)"; ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]); // Dashed lines for a soft look
+    ctx.strokeStyle = "rgba(14, 165, 233, 0.3)"; ctx.lineWidth = 1;
     for(let i=0; i<=10; i++) {
         ctx.beginPath(); ctx.moveTo(fieldRect.x+i*50,fieldRect.y); ctx.lineTo(fieldRect.x+i*50,fieldRect.y+500); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(fieldRect.x,fieldRect.y+i*50); ctx.lineTo(fieldRect.x+500,fieldRect.y+i*50); ctx.stroke();
     }
+    ctx.setLineDash([]); // Reset to solid lines for pieces and particles
     pieces.forEach(p => p.draw(ctx));
     particles = particles.filter(p => p.life > 0);
     particles.forEach(p => { p.update(); p.draw(ctx); });
