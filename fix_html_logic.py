@@ -14,7 +14,7 @@ def update_puzzle_html(directory):
         with open(json_path, 'r', encoding='utf-8') as f:
             assets_json = f.read()
 
-    # FULL HTML REWRITE - Anchored Snap Logic and Stage Selection
+    # FULL HTML REWRITE - Unified Blue Theme and Perfect Frame Alignment
     full_html = """<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -22,19 +22,26 @@ def update_puzzle_html(directory):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AquaPiece</title>
     <style>
+        * { box-sizing: border-box; }
         body {
             margin: 0; padding: 0;
-            background: #f0f8ff;
+            background: #e0f2fe;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             overflow: hidden;
             height: 100vh; width: 100vw;
             color: #333;
         }
 
+        #bubbleCanvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
         /* Title Screen */
         #title-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #e0f2fe;
+            background: transparent;
             z-index: 10000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
@@ -42,7 +49,7 @@ def update_puzzle_html(directory):
         /* Stage Selection Screen */
         #stage-selection {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #e0f2fe;
+            background: transparent;
             z-index: 15000;
             display: none; flex-direction: column; justify-content: center; align-items: center;
         }
@@ -50,17 +57,11 @@ def update_puzzle_html(directory):
         .stage-buttons { display: flex; gap: 20px; }
         .stage-btn {
             padding: 30px 50px; font-size: 24px; cursor: pointer;
-            background: #fff; color: #0074d9; border: 4px solid #bae6fd; border-radius: 20px;
+            background: rgba(255, 255, 255, 0.9); color: #0074d9; border: 4px solid #bae6fd; border-radius: 20px;
             font-weight: bold; transition: all 0.2s;
         }
         .stage-btn:hover { transform: scale(1.05); background: #bae6fd; color: #fff; }
         .stage-btn.disabled { opacity: 0.5; cursor: not-allowed; }
-
-        #bubbleCanvas {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10001;
-            pointer-events: none;
-        }
 
         #title-content {
             position: relative;
@@ -71,32 +72,30 @@ def update_puzzle_html(directory):
         #title-logo {
             position: relative;
             width: fit-content;
-            height: 180px;
+            height: 240px;
             display: flex; justify-content: center; align-items: center;
             gap: 20px;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.6);
             border-radius: 30px;
-            padding: 40px 60px;
+            padding: 20px 60px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             margin-bottom: 60px;
         }
         .logo-waku {
             width: 100px; height: 100px;
-            opacity: 0.25;
+            opacity: 0.3;
             filter: grayscale(100%) brightness(1.2);
             transition: opacity 0.5s, filter 0.5s;
             pointer-events: none;
             object-fit: contain;
             border: 4px dashed #0369a1;
-            border-radius: 50%;
-            padding: 10px;
+            border-radius: 20px;
+            padding: 0;
+            position: relative;
         }
-        .logo-waku:nth-child(even) {
-            transform: translateY(25px);
-        }
-        .logo-waku:nth-child(odd) {
-            transform: translateY(-25px);
-        }
+        .logo-waku:nth-child(even) { transform: translateY(35px); }
+        .logo-waku:nth-child(odd) { transform: translateY(-35px); }
+        
         .logo-piece {
             position: absolute;
             width: 100px; height: 100px;
@@ -123,15 +122,20 @@ def update_puzzle_html(directory):
         #start-button:hover { transform: scale(1.05); background: #bae6fd; color: #fff; }
 
         #wave-transition {
-            position: fixed; top: 100%; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 100%; left: 0; width: 100%; height: 120%;
             background: #7dd3fc; z-index: 20000;
-            transition: top 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: top 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
             display: none;
-            border-top: 15px solid #fff;
-            box-shadow: 0 -20px 50px rgba(125, 211, 252, 0.5);
         }
-        #wave-transition.active { top: 0%; display: block; }
+        #wave-transition::before {
+            content: "";
+            position: absolute; top: -80px; left: 0; width: 100%; height: 85px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 28"><path d="M0 15Q15 0 30 15t30 0 30 0 30 0v13H0z" fill="%237dd3fc"/></svg>');
+            background-repeat: repeat-x;
+            background-size: 200px 85px;
+        }
+        #wave-transition.active { top: -20%; display: block; }
 
         #game-ui {
             opacity: 0; transition: opacity 0.5s;
@@ -139,43 +143,39 @@ def update_puzzle_html(directory):
             position: relative; z-index: 10;
         }
 
-        #header { padding: 10px; text-align: center; position: relative; width: 1000px; }
-        #header h1 { color: #0369a1; margin: 0; }
+        #header { padding: 10px; text-align: center; position: relative; width: 1100px; }
+        #header h1 { color: #0369a1; margin: 0; font-size: 36px; }
         
         #back-button {
             position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-            padding: 10px 25px; cursor: pointer; background: #fff; color: #0369a1;
+            padding: 10px 25px; cursor: pointer; background: rgba(255, 255, 255, 0.9); color: #0369a1;
             border: 2px solid #bae6fd; border-radius: 20px; font-weight: bold;
             transition: all 0.2s;
         }
         #back-button:hover { background: #bae6fd; color: #fff; }
 
-        #timer-display { font-size: 24px; color: #0369a1; background: #fff; padding: 5px 30px; border-radius: 30px; margin-top: 10px; border: 2px solid #bae6fd; display: inline-block; }
+        #timer-display { font-size: 24px; color: #0369a1; background: rgba(255, 255, 255, 0.9); padding: 5px 30px; border-radius: 30px; margin-top: 10px; border: 2px solid #bae6fd; display: inline-block; }
         
-        #game-container { position: relative; width: 1050px; height: 650px; display: flex; justify-content: center; align-items: center; }
-        #frame {
-            position: absolute; width: 540px; height: 540px; border: 15px solid #d1d5db; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            background: none;
-            pointer-events: none; z-index: 5;
-        }
-        canvas#gameCanvas { display: block; cursor: crosshair; background: #f8fafc; border-radius: 10px; position: relative; z-index: 2; }
+        #game-container { position: relative; width: 1100px; height: 750px; display: flex; justify-content: center; align-items: center; }
         
-        #controls { padding: 10px 30px; background: #fff; color: #64748b; border-radius: 30px; margin-top: 15px; border: 2px solid #e2e8f0; }
+        canvas#gameCanvas { display: block; cursor: crosshair; background: transparent; position: relative; z-index: 2; }
+        
+        #controls { padding: 10px 30px; background: rgba(255, 255, 255, 0.9); color: #64748b; border-radius: 30px; margin-top: 15px; border: 2px solid #e2e8f0; font-weight: bold; }
 
         #overlay {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.95); color: #0369a1;
-            flex-direction: column; justify-content: center; align-items: center; z-index: 50; border-radius: 10px;
+            background: rgba(255, 255, 255, 0.96); color: #0369a1;
+            flex-direction: column; justify-content: center; align-items: center; z-index: 50; border-radius: 20px;
         }
-        #overlay h1 { font-size: 70px; color: #0ea5e9; text-shadow: 2px 2px 0 #fff; }
-        #overlay button { padding: 15px 60px; font-size: 24px; cursor: pointer; background: #0ea5e9; color: white; border: none; border-radius: 50px; box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3); }
+        #overlay h1 { font-size: 80px; color: #0ea5e9; text-shadow: 3px 3px 0 #fff; margin-bottom: 20px; }
+        #overlay button { padding: 20px 80px; font-size: 28px; cursor: pointer; background: #0ea5e9; color: white; border: none; border-radius: 60px; box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3); font-weight: bold; }
     </style>
 </head>
 <body>
 
+<canvas id="bubbleCanvas"></canvas>
+
 <div id="title-screen">
-    <canvas id="bubbleCanvas"></canvas>
     <div id="title-content">
         <div id="title-logo"></div>
         <button id="start-button" onclick="showStageSelection()">START GAME</button>
@@ -187,7 +187,7 @@ def update_puzzle_html(directory):
     <div class="stage-buttons">
         <button class="stage-btn" onclick="startStage(1)">Stage 1</button>
         <button class="stage-btn disabled" onclick="alert('Coming Soon!')">Stage 2</button>
-        <button class="stage-btn disabled" onclick="alert('Coming Soon!')">Stage 3</button>
+        <button class="stage-btn" onclick="startStage(3)">Stage 3</button>
     </div>
 </div>
 
@@ -200,11 +200,10 @@ def update_puzzle_html(directory):
         <div id="timer-display">時間: 00:00</div>
     </div>
     <div id="game-container">
-        <div id="frame"></div>
-        <canvas id="gameCanvas" width="1000" height="650"></canvas>
+        <canvas id="gameCanvas" width="1100" height="750"></canvas>
         <div id="overlay">
             <h1>クリア！</h1>
-            <p id="clear-time-text" style="font-size:30px;">タイム: 00:00</p>
+            <p id="clear-time-text" style="font-size:36px;">タイム: 00:00</p>
             <button onclick="backToSelection()">ステージ選択へ</button>
         </div>
     </div>
@@ -213,13 +212,22 @@ def update_puzzle_html(directory):
 
 <script>
 const ASSETS_DATA = """ + assets_json + """;
+const CELL_SIZE = 60;
 
 const PIECE_CONFIG = {
     "azarasi": { w: 5, h: 3 }, "chouchin": { w: 3, h: 2 }, "ei": { w: 4, h: 4 },
     "shachi": { w: 3, h: 5 }, "jinbei": { w: 4, h: 4 }, "kame": { w: 5, h: 3 },
     "kapibara": { w: 5, h: 3 }, "manbo": { w: 3, h: 4 }, "pengin": { w: 3, h: 3 },
-    "rakko": { w: 4, h: 2 }, "same": { w: 4, h: 3 }, "todo": { w: 4, h: 3 }
+    "rakko": { w: 4, h: 2 }, "same": { w: 4, h: 3 }, "todo": { w: 4, h: 3 },
+    "tako": { w: 3, h: 2 }, "kujira": { w: 4, h: 2 }, "kurione": { w: 2, h: 3 }
 };
+
+const STAGE_CONFIG = {
+    1: { grid: 4, pieces: ["tako", "kujira", "kurione"] },
+    3: { grid: 10, pieces: ["azarasi", "chouchin", "ei", "shachi", "jinbei", "kame", "kapibara", "manbo", "pengin", "rakko", "same", "todo"] }
+};
+
+let currentStageNum = 1;
 
 function playSound(type) {
     const dataUrl = type === 'place' ? ASSETS_DATA["グラスを置く"] : ASSETS_DATA["ロッカーを開ける1"];
@@ -257,8 +265,8 @@ function initLogoPuzzle() {
         piece.src = ASSETS_DATA[item.piece];
         piece.className = 'logo-piece';
         piece.dataset.type = item.type;
-        piece.style.left = (Math.random() * (window.innerWidth - 100)) + 'px';
-        piece.style.top = (Math.random() * (window.innerHeight - 100)) + 'px';
+        piece.style.left = (50 + Math.random() * (window.innerWidth - 150)) + 'px';
+        piece.style.top = (50 + Math.random() * (window.innerHeight - 150)) + 'px';
         screen.appendChild(piece);
         makeLogoDraggable(piece, container);
     });
@@ -279,9 +287,7 @@ function makeLogoDraggable(elm, container) {
                     const cx1 = r1.left + r1.width/2, cy1 = r1.top + r1.height/2;
                     const cx2 = r2.left + r2.width/2, cy2 = r2.top + r2.height/2;
                     if (Math.sqrt(Math.pow(cx1-cx2,2)+Math.pow(cy1-cy2,2)) < 60) {
-                        // Reparent to container to keep position fixed relative to frames
                         container.appendChild(elm);
-                        // Using getBoundingClientRect to find exact center relative to container
                         const cRect = container.getBoundingClientRect();
                         elm.style.left = (r2.left - cRect.left) + "px";
                         elm.style.top = (r2.top - cRect.top) + "px";
@@ -306,9 +312,14 @@ function makeLogoDraggable(elm, container) {
 }
 
 function showStageSelection() {
+    const wave = document.getElementById('wave-transition');
+    wave.style.display = 'block'; wave.offsetHeight; wave.classList.add('active');
     playSound('rotate');
-    document.getElementById('title-screen').style.display = 'none';
-    document.getElementById('stage-selection').style.display = 'flex';
+    setTimeout(() => {
+        document.getElementById('title-screen').style.display = 'none';
+        document.getElementById('stage-selection').style.display = 'flex';
+    }, 400);
+    setTimeout(() => wave.classList.remove('active'), 800);
 }
 
 function startStage(num) {
@@ -319,20 +330,23 @@ function startStage(num) {
         document.getElementById('stage-selection').style.display = 'none';
         document.getElementById('game-ui').style.display = 'flex';
         setTimeout(() => document.getElementById('game-ui').style.opacity = '1', 50);
-        init();
-    }, 900);
-    setTimeout(() => wave.classList.remove('active'), 1800);
+        init(num);
+    }, 400);
+    setTimeout(() => wave.classList.remove('active'), 800);
 }
 
 function backToSelection() {
     playSound('rotate');
+    const wave = document.getElementById('wave-transition');
+    wave.style.display = 'block'; wave.offsetHeight; wave.classList.add('active');
     isCleared = false;
-    document.getElementById('game-ui').style.opacity = '0';
     setTimeout(() => {
+        document.getElementById('game-ui').style.opacity = '0';
         document.getElementById('game-ui').style.display = 'none';
         document.getElementById('stage-selection').style.display = 'flex';
         document.getElementById("overlay").style.display = "none";
-    }, 500);
+    }, 400);
+    setTimeout(() => wave.classList.remove('active'), 800);
 }
 
 // Main Game Logic
@@ -351,9 +365,9 @@ class PuzzlePiece {
     constructor(name, dataUrl, gridW, gridH) {
         this.name = name; this.img = new Image(); this.img.src = dataUrl;
         this.gridW = gridW; this.gridH = gridH;
-        this.width = gridW * 50; this.height = gridH * 50;
-        this.x = Math.random() < 0.5 ? Math.random()*150+50 : Math.random()*150+800;
-        this.y = Math.random()*450+100;
+        this.width = gridW * CELL_SIZE; this.height = gridH * CELL_SIZE;
+        this.x = Math.random() < 0.5 ? Math.random()*200+50 : Math.random()*200+850;
+        this.y = Math.random()*500+100;
         this.rotation = [0, 90, 180, 270][Math.floor(Math.random()*4)];
         this.placed = false; this.dragging = false; this.gridX = -1; this.gridY = -1;
         this.shapeMap = []; this.snapEffect = 0;
@@ -366,10 +380,10 @@ class PuzzlePiece {
         for (let gy = 0; gy < this.gridH; gy++) {
             const row = [];
             for (let gx = 0; gx < this.gridW; gx++) {
-                const imageData = ctx.getImageData(gx*50, gy*50, 50, 50).data;
+                const imageData = ctx.getImageData(gx*CELL_SIZE, gy*CELL_SIZE, CELL_SIZE, CELL_SIZE).data;
                 let solid = 0;
                 for (let i = 3; i < imageData.length; i += 4) if (imageData[i] > 50) solid++;
-                row.push(solid > 625);
+                row.push(solid > (CELL_SIZE*CELL_SIZE*0.25));
             }
             baseShape.push(row);
         }
@@ -391,7 +405,7 @@ class PuzzlePiece {
     getCurrentShape() { return this.shapeMap[(this.rotation/90)%4] || []; }
     draw(ctx) {
         ctx.save(); ctx.translate(this.x, this.y); ctx.rotate((this.rotation*Math.PI)/180);
-        if (!this.placed) { ctx.shadowColor = 'rgba(0,0,0,0.1)'; ctx.shadowBlur = 10; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3; }
+        if (!this.placed) { ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 12; ctx.shadowOffsetX = 4; ctx.shadowOffsetY = 4; }
         ctx.drawImage(this.img, -this.width/2, -this.height/2, this.width, this.height);
         ctx.restore();
     }
@@ -411,21 +425,22 @@ class PuzzlePiece {
     }
     snapToGrid(fieldRect) {
         const { w, h } = this.getRotatedGridDim();
-        const gx = Math.round((this.x - (w*50)/2 - fieldRect.x)/50), gy = Math.round((this.y - (h*50)/2 - fieldRect.y)/50);
-        if (gx >= 0 && gx <= 10-w && gy >= 0 && gy <= 10-h) {
-            this.gridX = gx; this.gridY = gy; this.x = fieldRect.x + gx*50 + (w*50)/2; this.y = fieldRect.y + gy*50 + (h*50)/2;
+        const config = STAGE_CONFIG[currentStageNum];
+        const gx = Math.round((this.x - (w*CELL_SIZE)/2 - fieldRect.x)/CELL_SIZE), gy = Math.round((this.y - (h*CELL_SIZE)/2 - fieldRect.y)/CELL_SIZE);
+        if (gx >= 0 && gx <= config.grid-w && gy >= 0 && gy <= config.grid-h) {
+            this.gridX = gx; this.gridY = gy; this.x = fieldRect.x + gx*CELL_SIZE + (w*CELL_SIZE)/2; this.y = fieldRect.y + gy*CELL_SIZE + (h*CELL_SIZE)/2;
             this.placed = true; playSound('place');
-            for (let i=0; i<10; i++) particles.push(new Particle(this.x, this.y));
+            for (let i=0; i<15; i++) particles.push(new Particle(this.x, this.y));
         } else {
             this.placed = false; this.gridX = -1; this.gridY = -1;
-            this.x = Math.max(50, Math.min(950, this.x)); this.y = Math.max(50, Math.min(600, this.y));
+            this.x = Math.max(50, Math.min(1050, this.x)); this.y = Math.max(50, Math.min(700, this.y));
             playSound('place');
         }
     }
 }
 
 const canvas = document.getElementById("gameCanvas"), ctx = canvas.getContext("2d");
-const fieldRect = { x: 250, y: 75, width: 500, height: 500 };
+let fieldRect = { x: 0, y: 0, width: 0, height: 0 };
 let pieces = [], particles = [], activePiece = null, startTime = null, isCleared = false;
 
 function formatTime(ms) {
@@ -433,17 +448,34 @@ function formatTime(ms) {
     return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 }
 
-async function init() {
+async function init(stageNum) {
+    currentStageNum = stageNum;
+    const config = STAGE_CONFIG[stageNum];
     const assetMap = ASSETS_DATA;
-    const names = Object.keys(assetMap).filter(n => PIECE_CONFIG[n]);
+    
+    // Calculate grid size
+    const gridPx = config.grid * CELL_SIZE;
+    fieldRect.width = gridPx;
+    fieldRect.height = gridPx;
+    fieldRect.x = (canvas.width - gridPx) / 2;
+    fieldRect.y = (canvas.height - gridPx) / 2;
+    
+    const names = config.pieces;
     pieces = [];
-    names.forEach(name => pieces.push(new PuzzlePiece(name, assetMap[name], PIECE_CONFIG[name].w, PIECE_CONFIG[name].h)));
+    names.forEach(name => {
+        if (assetMap[name]) {
+            pieces.push(new PuzzlePiece(name, assetMap[name], PIECE_CONFIG[name].w, PIECE_CONFIG[name].h));
+        }
+    });
     startTime = Date.now();
+    isCleared = false;
     requestAnimationFrame(gameLoop);
 }
 
 function checkWin() {
-    const grid = Array(10).fill().map(() => Array(10).fill(0));
+    const config = STAGE_CONFIG[currentStageNum];
+    const gridSize = config.grid;
+    const grid = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
     let allPlaced = true;
     for (const p of pieces) {
         if (!p.placed) { allPlaced = false; continue; }
@@ -451,12 +483,12 @@ function checkWin() {
         for (let ry=0; ry<h; ry++) for (let rx=0; rx<w; rx++) {
             if (shape[ry][rx]) {
                 const gx = p.gridX+rx, gy = p.gridY+ry;
-                if (gx>=0 && gx<10 && gy>=0 && gy<10) grid[gx][gy]++; else allPlaced = false;
+                if (gx>=0 && gx<gridSize && gy>=0 && gy<gridSize) grid[gx][gy]++; else allPlaced = false;
             }
         }
     }
     if (!allPlaced) return false;
-    for (let x=0; x<10; x++) for (let y=0; y<10; y++) if (grid[x][y] !== 1) return false;
+    for (let x=0; x<gridSize; x++) for (let y=0; y<gridSize; y++) if (grid[x][y] !== 1) return false;
     return true;
 }
 
@@ -465,13 +497,56 @@ function gameLoop() {
     ctx.clearRect(0,0,canvas.width,canvas.height);
     const elapsed = Date.now() - startTime;
     document.getElementById('timer-display').innerText = `時間: ${formatTime(elapsed)}`;
-    ctx.fillStyle = "#f1f5f9"; ctx.fillRect(fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
-    ctx.setLineDash([5, 5]); ctx.strokeStyle = "rgba(14, 165, 233, 0.3)"; ctx.lineWidth = 1;
-    for(let i=0; i<=10; i++) {
-        ctx.beginPath(); ctx.moveTo(fieldRect.x+i*50,fieldRect.y); ctx.lineTo(fieldRect.x+i*50,fieldRect.y+500); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(fieldRect.x,fieldRect.y+i*50); ctx.lineTo(fieldRect.x+500,fieldRect.y+i*50); ctx.stroke();
+    
+    const config = STAGE_CONFIG[currentStageNum];
+    const gridSize = config.grid;
+
+    // Integrated Field Rendering: Soft watery glow and subtle grid
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = "rgba(14, 165, 233, 0.2)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+    
+    // Draw rounded field area
+    const r = 24; // corner radius
+    ctx.beginPath();
+    ctx.moveTo(fieldRect.x + r, fieldRect.y);
+    ctx.lineTo(fieldRect.x + fieldRect.width - r, fieldRect.y);
+    ctx.quadraticCurveTo(fieldRect.x + fieldRect.width, fieldRect.y, fieldRect.x + fieldRect.width, fieldRect.y + r);
+    ctx.lineTo(fieldRect.x + fieldRect.width, fieldRect.y + fieldRect.height - r);
+    ctx.quadraticCurveTo(fieldRect.x + fieldRect.width, fieldRect.y + fieldRect.height, fieldRect.x + fieldRect.width - r, fieldRect.y + fieldRect.height);
+    ctx.lineTo(fieldRect.x + r, fieldRect.y + fieldRect.height);
+    ctx.quadraticCurveTo(fieldRect.x, fieldRect.y + fieldRect.height, fieldRect.x, fieldRect.y + fieldRect.height - r);
+    ctx.lineTo(fieldRect.x, fieldRect.y + r);
+    ctx.quadraticCurveTo(fieldRect.x, fieldRect.y, fieldRect.x + r, fieldRect.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    
+    // Soft Grid Lines
+    ctx.setLineDash([4, 12]); ctx.strokeStyle = "rgba(3, 105, 161, 0.15)"; ctx.lineWidth = 1;
+    for(let i=1; i<gridSize; i++) {
+        ctx.beginPath(); ctx.moveTo(fieldRect.x+i*CELL_SIZE,fieldRect.y); ctx.lineTo(fieldRect.x+i*CELL_SIZE,fieldRect.y+fieldRect.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(fieldRect.x,fieldRect.y+i*CELL_SIZE); ctx.lineTo(fieldRect.x+fieldRect.width,fieldRect.y+i*CELL_SIZE); ctx.stroke();
     }
-    ctx.setLineDash([]); pieces.forEach(p => p.draw(ctx));
+
+    // Clear Solid Outer Border for 4x4 or 10x10 Field
+    ctx.setLineDash([]); ctx.strokeStyle = "rgba(3, 105, 161, 0.6)"; ctx.lineWidth = 4;
+    const br = 24; // corner radius
+    ctx.beginPath();
+    ctx.moveTo(fieldRect.x + br, fieldRect.y);
+    ctx.lineTo(fieldRect.x + fieldRect.width - br, fieldRect.y);
+    ctx.quadraticCurveTo(fieldRect.x + fieldRect.width, fieldRect.y, fieldRect.x + fieldRect.width, fieldRect.y + br);
+    ctx.lineTo(fieldRect.x + fieldRect.width, fieldRect.y + fieldRect.height - br);
+    ctx.quadraticCurveTo(fieldRect.x + fieldRect.width, fieldRect.y + fieldRect.height, fieldRect.x + fieldRect.width - br, fieldRect.y + fieldRect.height);
+    ctx.lineTo(fieldRect.x + br, fieldRect.y + fieldRect.height);
+    ctx.quadraticCurveTo(fieldRect.x, fieldRect.y + fieldRect.height, fieldRect.x, fieldRect.y + fieldRect.height - br);
+    ctx.lineTo(fieldRect.x, fieldRect.y + br);
+    ctx.quadraticCurveTo(fieldRect.x, fieldRect.y, fieldRect.x + br, fieldRect.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    pieces.forEach(p => p.draw(ctx));
     particles = particles.filter(p => p.life > 0); particles.forEach(p => { p.update(); p.draw(ctx); });
     if (pieces.length > 0 && !isCleared && checkWin()) {
         isCleared = true; document.getElementById('clear-time-text').innerText = `タイム: ${formatTime(elapsed)}`;
@@ -542,4 +617,4 @@ animateBubbles();
     print(f"Fixed logo shifting and enabled stage selection in {html_path}.")
 
 if __name__ == "__main__":
-    update_puzzle_html(r"C:\Users\藤本　羽奏\puzzle")
+    update_puzzle_html(r"C:\\Users\\藤本　羽奏\\puzzle")
