@@ -265,7 +265,7 @@ def update_puzzle_html(directory):
     <h1>ステージ選択</h1>
     <div class="stage-buttons">
         <button class="stage-btn" onclick="startStage(1)">Stage 1</button>
-        <button class="stage-btn disabled" onclick="alert('Coming Soon!')">Stage 2</button>
+        <button class="stage-btn" onclick="startStage(2)">Stage 2</button>
         <button class="stage-btn" onclick="startStage(3)">Stage 3</button>
     </div>
 </div>
@@ -352,11 +352,15 @@ const PIECE_CONFIG = {
     "shachi": { w: 3, h: 5 }, "jinbei": { w: 4, h: 4 }, "kame": { w: 5, h: 3 },
     "kapibara": { w: 5, h: 3 }, "manbo": { w: 3, h: 4 }, "pengin": { w: 3, h: 3 },
     "rakko": { w: 4, h: 2 }, "same": { w: 4, h: 3 }, "todo": { w: 4, h: 3 },
-    "tako": { w: 3, h: 2 }, "kujira": { w: 4, h: 2 }, "kurione": { w: 2, h: 3 }
+    "tako": { w: 3, h: 2 }, "kujira": { w: 4, h: 2 }, "kurione": { w: 2, h: 3 },
+    "kani": { w: 5, h: 3 }, "tatunootoshigo": { w: 2, h: 4 }, "chinanago": { w: 2, h: 4 },
+    "kurage": { w: 2, h: 2 }, "fugu": { w: 3, h: 2 }, "yadokari": { w: 1, h: 1 },
+    "hitode": { w: 3, h: 3 }, "ebi": { w: 3, h: 2 }
 };
 
 const STAGE_CONFIG = {
     1: { grid: 4, pieces: ["tako", "kujira", "kurione"] },
+    2: { grid: 7, pieces: ["kani", "tatunootoshigo", "chinanago", "kurage", "yadokari", "fugu", "hitode", "ebi"] },
     3: { grid: 10, pieces: ["azarasi", "chouchin", "ei", "shachi", "jinbei", "kame", "kapibara", "manbo", "pengin", "rakko", "same", "todo"] }
 };
 
