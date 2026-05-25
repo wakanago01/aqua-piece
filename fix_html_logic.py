@@ -169,6 +169,81 @@ def update_puzzle_html(directory):
         }
         #overlay h1 { font-size: 80px; color: #0ea5e9; text-shadow: 3px 3px 0 #fff; margin-bottom: 20px; }
         #overlay button { padding: 20px 80px; font-size: 28px; cursor: pointer; background: #0ea5e9; color: white; border: none; border-radius: 60px; box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3); font-weight: bold; }
+
+        /* Aquatic World Screen */
+        #aquatic-world {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; z-index: 18000;
+        }
+        #worldCanvas { display: block; width: 100%; height: 100%; cursor: default; }
+        #world-ui {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
+            display: flex; justify-content: space-between; align-items: flex-start;
+            pointer-events: none;
+        }
+        #world-ui * { pointer-events: auto; }
+        .ui-btn {
+            padding: 12px 30px; background: rgba(255, 255, 255, 0.9); border: 2px solid #bae6fd;
+            border-radius: 20px; color: #0369a1; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .ui-btn:hover { background: #bae6fd; color: #fff; }
+        #coin-display { background: #fff; padding: 10px 25px; border-radius: 30px; color: #0369a1; font-weight: bold; border: 2px solid #fde047; box-shadow: 0 4px 0 #facc15; }
+
+        /* Shop Drawer */
+        #shop-drawer {
+            position: absolute; bottom: -300px; left: 50%; transform: translateX(-50%);
+            width: 800px; background: rgba(255, 255, 255, 0.95); border-radius: 30px 30px 0 0;
+            padding: 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+            transition: bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 18005; display: flex; flex-direction: column; align-items: center;
+        }
+        #shop-drawer.active { bottom: 0; }
+        .shop-items { display: flex; gap: 20px; margin-top: 15px; }
+        .shop-item {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            padding: 15px; border: 2px solid #e2e8f0; border-radius: 20px; cursor: pointer; transition: all 0.2s;
+        }
+        .shop-item:hover { background: #f8fafc; transform: translateY(-5px); border-color: #bae6fd; }
+        .shop-item .price { color: #eab308; font-weight: bold; font-size: 14px; }
+
+        /* Encyclopedia Screen */
+        #encyclopedia {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f0f9ff; z-index: 19000;
+            display: none; flex-direction: column; align-items: center; padding: 40px;
+        }
+        #ency-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px;
+            width: 1000px; margin-top: 40px; overflow-y: auto; padding: 20px;
+        }
+        .ency-card {
+            background: #fff; border-radius: 20px; padding: 20px; border: 2px solid #bae6fd;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .ency-img { width: 100px; height: 100px; object-fit: contain; }
+        .ency-img.locked { filter: brightness(0); opacity: 0.3; }
+        .ency-name { font-weight: bold; color: #0369a1; }
+        .ency-name.locked { color: #94a3b8; }
+
+        /* Invite Popup */
+        #invite-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px);
+            z-index: 21000; display: none; justify-content: center; align-items: center;
+        }
+        #invite-card {
+            background: #fff; padding: 40px; border-radius: 40px; width: 800px;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        .invite-options { display: flex; gap: 20px; margin: 30px 0; overflow-x: auto; padding: 10px; width: 100%; justify-content: center; }
+        .invite-item {
+            padding: 20px; border: 3px solid #e2e8f0; border-radius: 25px; cursor: pointer;
+            transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .invite-item:hover { transform: scale(1.05); border-color: #0ea5e9; background: #f0f9ff; }
+        .invite-item img { width: 120px; height: 120px; object-fit: contain; }
+        .invite-item span { font-weight: bold; color: #0369a1; }
     </style>
 </head>
 <body>
@@ -183,11 +258,53 @@ def update_puzzle_html(directory):
 </div>
 
 <div id="stage-selection">
+    <div style="display:flex; gap:15px; position:absolute; top:30px; right:30px;">
+        <button class="ui-btn" onclick="showEncyclopedia()">図鑑</button>
+        <button class="ui-btn" onclick="showAquaticWorld()">アクアワールド</button>
+    </div>
     <h1>ステージ選択</h1>
     <div class="stage-buttons">
         <button class="stage-btn" onclick="startStage(1)">Stage 1</button>
         <button class="stage-btn disabled" onclick="alert('Coming Soon!')">Stage 2</button>
         <button class="stage-btn" onclick="startStage(3)">Stage 3</button>
+    </div>
+</div>
+
+<div id="aquatic-world">
+    <canvas id="worldCanvas"></canvas>
+    <div id="world-ui">
+        <button class="ui-btn" onclick="backToSelectionFromWorld()">戻る</button>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <div id="coin-display">0 Coins</div>
+            <button class="ui-btn" onclick="toggleShop()">ショップ</button>
+        </div>
+    </div>
+    <div id="shop-drawer">
+        <h2 style="margin:0; color:#0369a1;">自然のデコレーション</h2>
+        <div class="shop-items">
+            <div class="shop-item" onclick="buyDecoration('plant')"><span>🌿</span><span>水草</span><span class="price">20c</span></div>
+            <div class="shop-item" onclick="buyDecoration('moss')"><span>🟢</span><span>苔</span><span class="price">15c</span></div>
+            <div class="shop-item" onclick="buyDecoration('rock')"><span>🪨</span><span>岩</span><span class="price">30c</span></div>
+            <div class="shop-item" onclick="buyDecoration('wood')"><span>🪵</span><span>流木</span><span class="price">50c</span></div>
+            <div class="shop-item" onclick="buyDecoration('grass')"><span>🌱</span><span>草</span><span class="price">10c</span></div>
+        </div>
+    </div>
+</div>
+
+<div id="encyclopedia">
+    <div style="width:1000px; display:flex; justify-content:space-between; align-items:center;">
+        <h1 style="color:#0369a1; margin:0;">生物図鑑</h1>
+        <button class="ui-btn" onclick="closeEncyclopedia()">戻る</button>
+    </div>
+    <div id="ency-grid"></div>
+</div>
+
+<div id="invite-overlay">
+    <div id="invite-card">
+        <h1 style="color:#0ea5e9; margin:0;">クリアおめでとう！</h1>
+        <p id="reward-text" style="font-size:24px; color:#64748b; margin:10px 0;">獲得コイン: 0c</p>
+        <h2 style="color:#0369a1; margin-top:20px;">ワールドに招待する生物を選んでください</h2>
+        <div class="invite-options" id="invite-options"></div>
     </div>
 </div>
 
@@ -213,6 +330,22 @@ def update_puzzle_html(directory):
 <script>
 const ASSETS_DATA = """ + assets_json + """;
 const CELL_SIZE = 60;
+
+// Persistent Data
+let userData = JSON.parse(localStorage.getItem('aquaPieceData')) || {
+    coins: 0,
+    unlocked: [],
+    worldCreatures: [],
+    worldDecorations: []
+};
+
+// One-time cleanup for 'kurione' as requested
+if (userData.worldCreatures.some(c => c.name === 'kurione')) {
+    userData.worldCreatures = userData.worldCreatures.filter(c => c.name !== 'kurione');
+    localStorage.setItem('aquaPieceData', JSON.stringify(userData));
+}
+
+function saveUserData() { localStorage.setItem('aquaPieceData', JSON.stringify(userData)); }
 
 const PIECE_CONFIG = {
     "azarasi": { w: 5, h: 3 }, "chouchin": { w: 3, h: 2 }, "ei": { w: 4, h: 4 },
@@ -339,8 +472,8 @@ function backToSelection() {
     playSound('rotate');
     const wave = document.getElementById('wave-transition');
     wave.style.display = 'block'; wave.offsetHeight; wave.classList.add('active');
-    isCleared = false;
     setTimeout(() => {
+        isCleared = false;
         document.getElementById('game-ui').style.opacity = '0';
         document.getElementById('game-ui').style.display = 'none';
         document.getElementById('stage-selection').style.display = 'flex';
@@ -348,6 +481,198 @@ function backToSelection() {
     }, 400);
     setTimeout(() => wave.classList.remove('active'), 800);
 }
+
+// Aquatic World & Encyclopedia Logic
+const ENCY_PIECES = Object.keys(PIECE_CONFIG);
+let worldPieces = [], worldDecorations = [], worldActiveItem = null, worldBubbles = [];
+
+class WorldCreature {
+    constructor(name, x, y) {
+        this.name = name; this.img = new Image(); this.img.src = ASSETS_DATA[name];
+        this.x = x || Math.random() * (window.innerWidth * 0.6);
+        this.y = y || Math.random() * window.innerHeight;
+        this.angle = Math.random() * Math.PI * 2;
+        this.speed = 0.5 + Math.random() * 1.0;
+        this.turnSpeed = (Math.random() - 0.5) * 0.02;
+        this.isAmphibious = ["pengin", "kapibara", "azarasi", "todo", "rakko", "kame"].includes(name);
+    }
+    update() {
+        this.angle += this.turnSpeed;
+        if (Math.random() < 0.01) this.turnSpeed = (Math.random() - 0.5) * 0.02;
+        this.x += Math.cos(this.angle) * this.speed;
+        this.y += Math.sin(this.angle) * this.speed;
+        
+        const shoreX = window.innerWidth * 0.65;
+        if (this.isAmphibious) {
+            if (this.x < 50 || this.x > window.innerWidth - 50) this.angle = Math.PI - this.angle;
+            if (this.y < 50 || this.y > window.innerHeight - 50) this.angle = -this.angle;
+        } else {
+            if (this.x < 50 || this.x > shoreX - 50) this.angle = Math.PI - this.angle;
+            if (this.y < 50 || this.y > window.innerHeight - 50) this.angle = -this.angle;
+        }
+    }
+    draw(ctx) {
+        ctx.save(); ctx.translate(this.x, this.y);
+        const depthFactor = this.y / window.innerHeight;
+        if (this.x < window.innerWidth * 0.65) {
+            const darken = Math.floor(depthFactor * 100);
+            ctx.filter = `brightness(${100 - darken}%)`;
+        }
+        ctx.rotate(this.angle + (Math.cos(this.angle) < 0 ? Math.PI : 0));
+        if (Math.cos(this.angle) < 0) ctx.scale(1, -1);
+        ctx.drawImage(this.img, -40, -40, 80, 80);
+        ctx.restore();
+    }
+    isHit(mx, my) { return Math.sqrt(Math.pow(this.x - mx, 2) + Math.pow(this.y - my, 2)) < 40; }
+}
+
+class WorldDecoration {
+    constructor(type, x, y) {
+        this.type = type; this.x = x; this.y = y; this.dragging = false;
+        this.emoji = { 'plant': '🌿', 'moss': '🟢', 'rock': '🪨', 'wood': '🪵', 'grass': '🌱' }[type];
+    }
+    draw(ctx) {
+        ctx.font = '50px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(this.emoji, this.x, this.y);
+    }
+    isHit(mx, my) { return Math.sqrt(Math.pow(this.x - mx, 2) + Math.pow(this.y - my, 2)) < 30; }
+}
+
+function showEncyclopedia() {
+    const grid = document.getElementById('ency-grid');
+    grid.innerHTML = '';
+    ENCY_PIECES.forEach(name => {
+        const isUnlocked = userData.unlocked.includes(name);
+        const card = document.createElement('div'); card.className = 'ency-card';
+        card.innerHTML = `<img src="${ASSETS_DATA[name]}" class="ency-img ${isUnlocked ? '' : 'locked'}">
+                          <div class="ency-name ${isUnlocked ? '' : 'locked'}">${isUnlocked ? name : '???'}</div>`;
+        grid.appendChild(card);
+    });
+    document.getElementById('encyclopedia').style.display = 'flex';
+}
+function closeEncyclopedia() { document.getElementById('encyclopedia').style.display = 'none'; }
+
+function showAquaticWorld() {
+    document.getElementById('aquatic-world').style.display = 'flex';
+    document.getElementById('coin-display').innerText = `${userData.coins} Coins`;
+    const canvas = document.getElementById('worldCanvas');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    
+    worldPieces = userData.worldCreatures.map(c => new WorldCreature(c.name, c.x, c.y));
+    worldDecorations = userData.worldDecorations.map(d => new WorldDecoration(d.type, d.x, d.y));
+    worldBubbles = [];
+    
+    requestAnimationFrame(worldLoop);
+}
+
+function worldLoop(time) {
+    const canvas = document.getElementById('worldCanvas');
+    if (!canvas || document.getElementById('aquatic-world').style.display === 'none') return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const shoreX = w * 0.65;
+
+    const waterGrad = ctx.createLinearGradient(0, 0, 0, h);
+    waterGrad.addColorStop(0, '#7dd3fc');
+    waterGrad.addColorStop(0.5, '#0ea5e9');
+    waterGrad.addColorStop(1, '#0c4a6e');
+    ctx.fillStyle = waterGrad; ctx.fillRect(0, 0, shoreX, h);
+
+    ctx.fillStyle = '#ecfccb'; ctx.fillRect(shoreX, 0, w - shoreX, h);
+
+    const shoreGrad = ctx.createLinearGradient(shoreX - 50, 0, shoreX + 50, 0);
+    shoreGrad.addColorStop(0, 'rgba(125, 211, 252, 0)');
+    shoreGrad.addColorStop(0.5, '#fef08a');
+    shoreGrad.addColorStop(1, 'rgba(236, 252, 203, 0)');
+    ctx.fillStyle = shoreGrad; ctx.fillRect(shoreX - 50, 0, 100, h);
+
+    ctx.save(); ctx.beginPath(); ctx.moveTo(0, 40);
+    for (let x = 0; x <= shoreX; x += 10) ctx.lineTo(x, 40 + Math.sin(x * 0.02 + time * 0.002) * 10);
+    ctx.lineTo(shoreX, 0); ctx.lineTo(0, 0);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.fill(); ctx.restore();
+
+    ctx.font = '60px Arial';
+    ctx.fillText('🌳', shoreX + 100, 150); ctx.fillText('🌲', w - 100, 300);
+    ctx.fillText('🌳', shoreX + 150, h - 200); ctx.fillText('🌻', w - 150, h - 100);
+    ctx.fillText('🌱', shoreX + 50, 400);
+
+    if (Math.random() < 0.05) worldBubbles.push({
+        x: Math.random() * (shoreX - 20), y: h + 20, 
+        v: 1 + Math.random() * 2, r: 2 + Math.random() * 4, 
+        o: 0.1 + Math.random() * 0.3
+    });
+    ctx.save();
+    for (let i = worldBubbles.length - 1; i >= 0; i--) {
+        const b = worldBubbles[i]; b.y -= b.v;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${b.o})`; ctx.fill();
+        if (b.y < -20) worldBubbles.splice(i, 1);
+    }
+    ctx.restore();
+
+    if (worldPieces.length === 0) {
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center';
+        ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(0,0,0,0.2)';
+        ctx.fillText('パズルをクリアして、自分だけのアクアワールドを作ろう！', w/2, h/2);
+        ctx.shadowBlur = 0;
+    }
+
+    worldDecorations.forEach(d => d.draw(ctx));
+    worldPieces.forEach(p => { p.update(); p.draw(ctx); });
+    
+    requestAnimationFrame(worldLoop);
+}
+
+function backToSelectionFromWorld() {
+    userData.worldDecorations = worldDecorations.map(d => ({ type: d.type, x: d.x, y: d.y }));
+    userData.worldCreatures = worldPieces.map(p => ({ name: p.name, x: p.x, y: p.y }));
+    saveUserData();
+    document.getElementById('aquatic-world').style.display = 'none';
+}
+
+function toggleShop() { document.getElementById('shop-drawer').classList.toggle('active'); }
+
+function buyDecoration(type) {
+    const prices = { 'plant': 20, 'moss': 15, 'rock': 30, 'wood': 50, 'grass': 10 };
+    if (userData.coins >= prices[type]) {
+        userData.coins -= prices[type];
+        document.getElementById('coin-display').innerText = `${userData.coins} Coins`;
+        worldDecorations.push(new WorldDecoration(type, window.innerWidth/2, window.innerHeight/2));
+        saveUserData();
+    } else { alert('コインが足りません！'); }
+}
+
+// World Interaction
+const wCanvas = document.getElementById('worldCanvas');
+wCanvas.addEventListener('mousedown', e => {
+    const mx = e.clientX, my = e.clientY;
+    if (e.button === 0) { // Left Click
+        for (let i = worldDecorations.length - 1; i >= 0; i--) {
+            if (worldDecorations[i].isHit(mx, my)) {
+                worldActiveItem = worldDecorations[i]; worldActiveItem.dragging = true;
+                worldDecorations.push(worldDecorations.splice(i, 1)[0]); break;
+            }
+        }
+    } else if (e.button === 2) { // Right Click to Remove
+        for (let i = worldDecorations.length - 1; i >= 0; i--) {
+            if (worldDecorations[i].isHit(mx, my)) {
+                worldDecorations.splice(i, 1); return;
+            }
+        }
+        for (let i = worldPieces.length - 1; i >= 0; i--) {
+            if (worldPieces[i].isHit(mx, my)) {
+                worldPieces.splice(i, 1); return;
+            }
+        }
+    }
+});
+window.addEventListener('mousemove', e => {
+    if (worldActiveItem && worldActiveItem.dragging) {
+        worldActiveItem.x = e.clientX; worldActiveItem.y = e.clientY;
+    }
+});
+window.addEventListener('mouseup', () => { if (worldActiveItem) { worldActiveItem.dragging = false; worldActiveItem = null; } });
+wCanvas.addEventListener("contextmenu", e => e.preventDefault());
 
 // Main Game Logic
 class Particle {
@@ -549,10 +874,32 @@ function gameLoop() {
     pieces.forEach(p => p.draw(ctx));
     particles = particles.filter(p => p.life > 0); particles.forEach(p => { p.update(); p.draw(ctx); });
     if (pieces.length > 0 && !isCleared && checkWin()) {
-        isCleared = true; document.getElementById('clear-time-text').innerText = `タイム: ${formatTime(elapsed)}`;
-        document.getElementById("overlay").style.display = "flex";
+        isCleared = true;
+        const elapsed = Date.now() - startTime;
+        const coins = Math.max(10, 300 - Math.floor(elapsed / 1000) * 2);
+        userData.coins += coins;
+        saveUserData();
+
+        document.getElementById('reward-text').innerText = `獲得コイン: ${coins}c (タイム: ${formatTime(elapsed)})`;
+        const options = document.getElementById('invite-options');
+        options.innerHTML = '';
+        STAGE_CONFIG[currentStageNum].pieces.forEach(name => {
+            const item = document.createElement('div'); item.className = 'invite-item';
+            item.innerHTML = `<img src="${ASSETS_DATA[name]}"><span>${name}</span>`;
+            item.onclick = () => inviteCreature(name);
+            options.appendChild(item);
+        });
+        document.getElementById('invite-overlay').style.display = 'flex';
     }
     requestAnimationFrame(gameLoop);
+}
+
+function inviteCreature(name) {
+    if (!userData.unlocked.includes(name)) userData.unlocked.push(name);
+    userData.worldCreatures.push({ name, x: Math.random()*window.innerWidth, y: window.innerHeight*0.6 });
+    saveUserData();
+    document.getElementById('invite-overlay').style.display = 'none';
+    backToSelection();
 }
 
 canvas.addEventListener("mousedown", e => {
