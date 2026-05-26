@@ -14,7 +14,7 @@ def update_puzzle_html(directory):
         with open(json_path, 'r', encoding='utf-8') as f:
             assets_json = f.read()
 
-    # FULL HTML REWRITE - Unified Blue Theme and Perfect Frame Alignment
+    # HTML content - Aquatic World removed, Rankings added, Profiles added
     full_html = """<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -36,6 +36,14 @@ def update_puzzle_html(directory):
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
             pointer-events: none;
+        }
+
+        /* Swim canvas: shown only behind the nickname modal */
+        #swimCanvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 29999;
+            pointer-events: none;
+            display: none;
         }
 
         /* Title Screen */
@@ -72,33 +80,31 @@ def update_puzzle_html(directory):
         #title-logo {
             position: relative;
             width: fit-content;
-            height: 240px;
+            height: 300px;
             display: flex; justify-content: center; align-items: center;
-            gap: 20px;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 30px;
-            padding: 20px 60px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            gap: 24px;
+            background: transparent;
+            padding: 20px 80px;
             margin-bottom: 60px;
         }
         .logo-waku {
-            width: 100px; height: 100px;
-            opacity: 0.3;
+            width: 130px; height: 130px;
+            opacity: 0.35;
             filter: grayscale(100%) brightness(1.2);
             transition: opacity 0.5s, filter 0.5s;
             pointer-events: none;
             object-fit: contain;
-            border: 4px dashed #0369a1;
-            border-radius: 20px;
+            border: none;
+            border-radius: 24px;
             padding: 0;
             position: relative;
         }
-        .logo-waku:nth-child(even) { transform: translateY(35px); }
-        .logo-waku:nth-child(odd) { transform: translateY(-35px); }
+        .logo-waku:nth-child(even) { transform: translateY(45px); }
+        .logo-waku:nth-child(odd) { transform: translateY(-45px); }
         
         .logo-piece {
             position: absolute;
-            width: 100px; height: 100px;
+            width: 130px; height: 130px;
             cursor: grab;
             z-index: 10010;
             filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
@@ -170,41 +176,11 @@ def update_puzzle_html(directory):
         #overlay h1 { font-size: 80px; color: #0ea5e9; text-shadow: 3px 3px 0 #fff; margin-bottom: 20px; }
         #overlay button { padding: 20px 80px; font-size: 28px; cursor: pointer; background: #0ea5e9; color: white; border: none; border-radius: 60px; box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3); font-weight: bold; }
 
-        /* Aquatic World Screen */
-        #aquatic-world {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; flex-direction: column; z-index: 18000;
-        }
-        #worldCanvas { display: block; width: 100%; height: 100%; cursor: default; }
-        #world-ui {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 20px;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            pointer-events: none;
-        }
-        #world-ui * { pointer-events: auto; }
         .ui-btn {
             padding: 12px 30px; background: rgba(255, 255, 255, 0.9); border: 2px solid #bae6fd;
             border-radius: 20px; color: #0369a1; font-weight: bold; cursor: pointer; transition: all 0.2s;
         }
         .ui-btn:hover { background: #bae6fd; color: #fff; }
-        #coin-display { background: #fff; padding: 10px 25px; border-radius: 30px; color: #0369a1; font-weight: bold; border: 2px solid #fde047; box-shadow: 0 4px 0 #facc15; }
-
-        /* Shop Drawer */
-        #shop-drawer {
-            position: absolute; bottom: -300px; left: 50%; transform: translateX(-50%);
-            width: 800px; background: rgba(255, 255, 255, 0.95); border-radius: 30px 30px 0 0;
-            padding: 20px; box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
-            transition: bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 18005; display: flex; flex-direction: column; align-items: center;
-        }
-        #shop-drawer.active { bottom: 0; }
-        .shop-items { display: flex; gap: 20px; margin-top: 15px; }
-        .shop-item {
-            display: flex; flex-direction: column; align-items: center; gap: 5px;
-            padding: 15px; border: 2px solid #e2e8f0; border-radius: 20px; cursor: pointer; transition: all 0.2s;
-        }
-        .shop-item:hover { background: #f8fafc; transform: translateY(-5px); border-color: #bae6fd; }
-        .shop-item .price { color: #eab308; font-weight: bold; font-size: 14px; }
 
         /* Encyclopedia Screen */
         #encyclopedia {
@@ -219,36 +195,237 @@ def update_puzzle_html(directory):
         .ency-card {
             background: #fff; border-radius: 20px; padding: 20px; border: 2px solid #bae6fd;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 6px 15px rgba(3, 105, 161, 0.03);
         }
-        .ency-img { width: 100px; height: 100px; object-fit: contain; }
-        .ency-img.locked { filter: brightness(0); opacity: 0.3; }
+        .ency-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(3, 105, 161, 0.1);
+            border-color: #7dd3fc;
+        }
+        .ency-img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ency-img.locked {
+            filter: brightness(0) drop-shadow(0 0 10px rgba(3, 105, 161, 0.35));
+            opacity: 0.25;
+        }
         .ency-name { font-weight: bold; color: #0369a1; }
         .ency-name.locked { color: #94a3b8; }
 
-        /* Invite Popup */
-        #invite-overlay {
+        /* Piece Selector (in clear overlay) */
+        #piece-selector-section {
+            display: none; flex-direction: column; align-items: center; gap: 16px;
+            background: rgba(240,249,255,0.95); border: 2px solid #bae6fd;
+            border-radius: 24px; padding: 24px 32px; margin: 10px 0;
+            max-width: 680px; width: 100%;
+        }
+        #piece-selector-section h3 { margin: 0; color: #0369a1; font-size: 20px; }
+        #piece-selector-grid {
+            display: flex; flex-wrap: wrap; gap: 14px; justify-content: center;
+        }
+        .piece-choice {
+            background: #fff; border: 3px solid #bae6fd; border-radius: 16px;
+            padding: 12px; cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; gap: 6px; transition: all 0.2s; min-width: 90px;
+        }
+        .piece-choice:hover { border-color: #0ea5e9; transform: scale(1.08); box-shadow: 0 6px 20px rgba(14,165,233,0.25); }
+        .piece-choice.already-unlocked { opacity: 0.45; cursor: default; border-color: #e2e8f0; }
+        .piece-choice.already-unlocked:hover { transform: none; box-shadow: none; border-color: #e2e8f0; }
+        .piece-choice img { width: 72px; height: 72px; object-fit: contain; }
+        .piece-choice span { font-size: 12px; font-weight: bold; color: #0369a1; }
+
+        /* Rankings Screen - Enlarged overall */
+        #rankings-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px);
-            z-index: 21000; display: none; justify-content: center; align-items: center;
+            background: #f0f9ff; z-index: 19000;
+            display: none; flex-direction: column; align-items: center; padding: 50px;
+            overflow-y: auto;
         }
-        #invite-card {
-            background: #fff; padding: 40px; border-radius: 40px; width: 800px;
-            display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        .ranking-column {
+            background: white; border-radius: 24px; border: 3px solid #bae6fd;
+            padding: 35px; width: 380px; display: flex; flex-direction: column;
+            align-items: center; box-shadow: 0 15px 35px rgba(3,105,161,0.08);
+            transition: transform 0.2s;
         }
-        .invite-options { display: flex; gap: 20px; margin: 30px 0; overflow-x: auto; padding: 10px; width: 100%; justify-content: center; }
-        .invite-item {
-            padding: 20px; border: 3px solid #e2e8f0; border-radius: 25px; cursor: pointer;
-            transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        .ranking-column:hover {
+            transform: translateY(-5px);
         }
-        .invite-item:hover { transform: scale(1.05); border-color: #0ea5e9; background: #f0f9ff; }
-        .invite-item img { width: 120px; height: 120px; object-fit: contain; }
-        .invite-item span { font-weight: bold; color: #0369a1; }
+        .ranking-column h2 { color: #0ea5e9; margin-top: 0; font-size: 34px; margin-bottom: 25px; }
+        .ranking-list { width: 100%; font-size: 22px; color: #334155; padding-left: 0; line-height: 1.8; list-style: none; }
+
+        /* Nickname Modal with translucent background — swim canvas behind it shows pieces */
+        #nickname-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(186, 230, 253, 0.45);
+            z-index: 30000;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(2px);
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .nickname-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 25px 60px rgba(3, 105, 161, 0.18);
+            border: 4px solid #bae6fd;
+            width: 480px;
+            text-align: center;
+            display: flex; flex-direction: column; gap: 24px;
+            position: relative;
+            animation: cardEntrance 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes cardEntrance {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .nickname-card h2 {
+            color: #0369a1;
+            font-size: 28px;
+            margin: 0;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+        }
+        .nickname-card h2 .fish-emoji {
+            font-size: 26px;
+            animation: fishSwim 2.5s ease-in-out infinite alternate;
+        }
+        .nickname-card h2 .fish-emoji.flip {
+            display: inline-block;
+            transform: scaleX(-1);
+        }
+        @keyframes fishSwim {
+            from { transform: translateY(0px); }
+            to   { transform: translateY(-4px); }
+        }
+        .nickname-card h2 .fish-emoji.flip {
+            animation: fishSwimFlip 2.5s ease-in-out infinite alternate;
+        }
+        @keyframes fishSwimFlip {
+            from { transform: scaleX(-1) translateY(0px); }
+            to   { transform: scaleX(-1) translateY(-4px); }
+        }
+        .nickname-input {
+            padding: 16px 20px;
+            font-size: 20px;
+            border: 3px solid #bae6fd;
+            border-radius: 18px;
+            outline: none;
+            transition: all 0.3s;
+            text-align: center;
+            color: #0369a1;
+            font-weight: bold;
+            background: #f0f9ff;
+        }
+        .nickname-input:focus {
+            border-color: #0ea5e9;
+            background: #fff;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.25);
+        }
+        .nickname-submit {
+            padding: 16px;
+            font-size: 22px;
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);
+            transition: all 0.2s;
+        }
+        .nickname-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(14, 165, 233, 0.4);
+        }
+        .nickname-submit:active {
+            transform: translateY(1px);
+        }
+        .profile-list-section {
+            text-align: left;
+            border-top: 2px dashed #bae6fd;
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+        .profile-list-section h3 {
+            font-size: 15px;
+            color: #0ea5e9;
+            margin: 0 0 12px 0;
+            font-weight: bold;
+        }
+        .profile-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-height: 140px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .profile-tag {
+            background: #fff;
+            border: 2px solid #bae6fd;
+            color: #0369a1;
+            padding: 10px 18px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 4px 6px rgba(3, 105, 161, 0.03);
+        }
+        .profile-tag:hover {
+            background: #bae6fd;
+            color: #0369a1;
+            border-color: #7dd3fc;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(3, 105, 161, 0.08);
+        }
+
+        .profile-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 3px solid #bae6fd;
+            border-radius: 25px;
+            padding: 8px 18px;
+            font-weight: bold;
+            color: #0369a1;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .profile-indicator:hover {
+            border-color: #0ea5e9;
+            background: #0ea5e9;
+            color: white;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
 
 <canvas id="bubbleCanvas"></canvas>
+
+<!-- Nickname Modal -->
+<div id="nickname-modal">
+    <div class="nickname-card">
+        <button id="close-profile-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; display: none;" onclick="closeNicknameModal()">✕</button>
+        <h2>👤 プレイヤー登録</h2>
+        <p style="color:#64748b; font-size:14px; margin:0;">ニックネームを入力して、パズルの世界へ冒険に出かけよう！</p>
+        <input type="text" id="nickname-input-field" class="nickname-input" placeholder="ニックネームを入力..." maxlength="10">
+        <button class="nickname-submit" onclick="submitNickname()">冒険をはじめる</button>
+        
+        <div id="profile-list-section" class="profile-list-section" style="display: none;">
+            <h3>または、登録済みのプレイヤーを選択：</h3>
+            <div id="profile-tags-container" class="profile-tags"></div>
+        </div>
+    </div>
+</div>
 
 <div id="title-screen">
     <div id="title-content">
@@ -258,36 +435,16 @@ def update_puzzle_html(directory):
 </div>
 
 <div id="stage-selection">
-    <div style="display:flex; gap:15px; position:absolute; top:30px; right:30px;">
+    <div style="display:flex; gap:15px; position:absolute; top:30px; right:30px; align-items: center; z-index: 16000;">
+        <div class="profile-indicator" onclick="showNicknameModal(true)">👤 <span id="current-user-display">ゲスト</span></div>
         <button class="ui-btn" onclick="showEncyclopedia()">図鑑</button>
-        <button class="ui-btn" onclick="showAquaticWorld()">アクアワールド</button>
+        <button class="ui-btn" onclick="showRankings()">ランキング</button>
     </div>
     <h1>ステージ選択</h1>
     <div class="stage-buttons">
         <button class="stage-btn" onclick="startStage(1)">Stage 1</button>
         <button class="stage-btn" onclick="startStage(2)">Stage 2</button>
         <button class="stage-btn" onclick="startStage(3)">Stage 3</button>
-    </div>
-</div>
-
-<div id="aquatic-world">
-    <canvas id="worldCanvas"></canvas>
-    <div id="world-ui">
-        <button class="ui-btn" onclick="backToSelectionFromWorld()">戻る</button>
-        <div style="display:flex; gap:15px; align-items:center;">
-            <div id="coin-display">0 Coins</div>
-            <button class="ui-btn" onclick="toggleShop()">ショップ</button>
-        </div>
-    </div>
-    <div id="shop-drawer">
-        <h2 style="margin:0; color:#0369a1;">自然のデコレーション</h2>
-        <div class="shop-items">
-            <div class="shop-item" onclick="buyDecoration('plant')"><span>🌿</span><span>水草</span><span class="price">20c</span></div>
-            <div class="shop-item" onclick="buyDecoration('moss')"><span>🟢</span><span>苔</span><span class="price">15c</span></div>
-            <div class="shop-item" onclick="buyDecoration('rock')"><span>🪨</span><span>岩</span><span class="price">30c</span></div>
-            <div class="shop-item" onclick="buyDecoration('wood')"><span>🪵</span><span>流木</span><span class="price">50c</span></div>
-            <div class="shop-item" onclick="buyDecoration('grass')"><span>🌱</span><span>草</span><span class="price">10c</span></div>
-        </div>
     </div>
 </div>
 
@@ -299,12 +456,24 @@ def update_puzzle_html(directory):
     <div id="ency-grid"></div>
 </div>
 
-<div id="invite-overlay">
-    <div id="invite-card">
-        <h1 style="color:#0ea5e9; margin:0;">クリアおめでとう！</h1>
-        <p id="reward-text" style="font-size:24px; color:#64748b; margin:10px 0;">獲得コイン: 0c</p>
-        <h2 style="color:#0369a1; margin-top:20px;">ワールドに招待する生物を選んでください</h2>
-        <div class="invite-options" id="invite-options"></div>
+<div id="rankings-overlay">
+    <div style="width:1220px; display:flex; justify-content:space-between; align-items:center; margin-bottom: 40px;">
+        <h1 style="color:#0369a1; margin:0; font-size: 48px;">クリア時間ランキング</h1>
+        <button class="ui-btn" onclick="closeRankings()" style="font-size: 20px; padding: 14px 40px; border-radius: 24px;">戻る</button>
+    </div>
+    <div style="display: flex; gap: 40px; width: 1220px; justify-content: space-between;">
+        <div class="ranking-column">
+            <h2>Stage 1</h2>
+            <ol id="ranking-list-1" class="ranking-list"></ol>
+        </div>
+        <div class="ranking-column">
+            <h2>Stage 2</h2>
+            <ol id="ranking-list-2" class="ranking-list"></ol>
+        </div>
+        <div class="ranking-column">
+            <h2>Stage 3</h2>
+            <ol id="ranking-list-3" class="ranking-list"></ol>
+        </div>
     </div>
 </div>
 
@@ -318,10 +487,20 @@ def update_puzzle_html(directory):
     </div>
     <div id="game-container">
         <canvas id="gameCanvas" width="1100" height="750"></canvas>
-        <div id="overlay">
-            <h1>クリア！</h1>
-            <p id="clear-time-text" style="font-size:36px;">タイム: 00:00</p>
-            <button onclick="backToSelection()">ステージ選択へ</button>
+        <div id="overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.98); color: #0369a1; flex-direction: column; justify-content: center; align-items: center; z-index: 50; border-radius: 20px; overflow-y: auto; padding: 20px;">
+            <h1 style="font-size: 60px; color: #0ea5e9; text-shadow: 2px 2px 0 #fff; margin: 0 0 6px 0;">クリア！</h1>
+            <p id="clear-time-text" style="font-size:28px; margin: 4px 0 10px 0; color: #0369a1; font-weight: bold;">タイム: 00:00</p>
+            <div id="clear-ranking-box" style="background: rgba(240, 249, 255, 0.8); border: 2px solid #bae6fd; border-radius: 20px; padding: 16px 36px; margin-bottom: 14px; min-width: 460px; text-align: left; box-shadow: 0 10px 20px rgba(3,105,161,0.05);">
+                <h3 style="margin: 0 0 10px 0; color: #0ea5e9; text-align: center; font-size: 22px;">このステージのランキング</h3>
+                <ol id="clear-ranking-list" style="margin: 0; padding-left: 0; font-size: 20px; color: #334155; line-height: 1.7; list-style: none;"></ol>
+            </div>
+            <!-- Piece Selector Section -->
+            <div id="piece-selector-section">
+                <h3>🐠 図鑑に登録するいきものを1匹選んでください！</h3>
+                <div id="piece-selector-grid"></div>
+            </div>
+            <p id="piece-selected-msg" style="display:none; font-size:18px; color:#059669; font-weight:bold; margin:8px 0;"></p>
+            <button id="to-selection-btn" onclick="backToSelection()" style="padding: 14px 55px; font-size: 20px; cursor: pointer; background: #0ea5e9; color: white; border: none; border-radius: 60px; box-shadow: 0 10px 20px rgba(14, 165, 233, 0.3); font-weight: bold; transition: all 0.2s; margin-top: 10px;">ステージ選択へ</button>
         </div>
     </div>
     <div id="controls">左クリック：移動 / 右クリック：回転</div>
@@ -331,21 +510,61 @@ def update_puzzle_html(directory):
 const ASSETS_DATA = """ + assets_json + """;
 const CELL_SIZE = 60;
 
-// Persistent Data
-let userData = JSON.parse(localStorage.getItem('aquaPieceData')) || {
-    coins: 0,
-    unlocked: [],
-    worldCreatures: [],
-    worldDecorations: []
+// Persistent Data structure containing multiple profiles and global rankings
+let aquaData = JSON.parse(localStorage.getItem('aquaPieceData')) || {
+    profiles: {},
+    globalRankings: { 1: [], 2: [], 3: [] }
 };
 
-// One-time cleanup for 'kurione' as requested
-if (userData.worldCreatures.some(c => c.name === 'kurione')) {
-    userData.worldCreatures = userData.worldCreatures.filter(c => c.name !== 'kurione');
-    localStorage.setItem('aquaPieceData', JSON.stringify(userData));
+// Backwards compatibility migration
+if (!aquaData.profiles) aquaData.profiles = {};
+if (!aquaData.globalRankings) {
+    aquaData.globalRankings = { 1: [], 2: [], 3: [] };
+    // Try migrating old rankings format if it exists
+    let oldRaw = localStorage.getItem('aquaPieceData');
+    try {
+        let oldData = JSON.parse(oldRaw);
+        if (oldData && oldData.rankings) {
+            for (let s in oldData.rankings) {
+                aquaData.globalRankings[s] = oldData.rankings[s].map((t, idx) => {
+                    let nickname = "kana";
+                    if (s == 2 && idx == 2) nickname = "sasami";
+                    return { nickname: nickname, time: t };
+                });
+            }
+        }
+    } catch (e) {}
 }
 
-function saveUserData() { localStorage.setItem('aquaPieceData', JSON.stringify(userData)); }
+// Special correction block to transition old "ゲスト" or "sasamini" rankings to new names (sasami for Stage 2 3rd place, kana for others)
+if (aquaData.globalRankings) {
+    for (let s in aquaData.globalRankings) {
+        if (Array.isArray(aquaData.globalRankings[s])) {
+            aquaData.globalRankings[s].forEach((entry, idx) => {
+                if (entry.nickname === "ゲスト" || entry.nickname === "sasamini") {
+                    if (s == 2 && idx == 2) {
+                        entry.nickname = "sasami";
+                    } else {
+                        entry.nickname = "kana";
+                    }
+                }
+            });
+        }
+    }
+}
+
+// Pre-register "sasami" so they always appear in the registered players list!
+if (!aquaData.profiles["sasami"]) {
+    aquaData.profiles["sasami"] = { unlocked: [] };
+}
+
+saveAquaData();
+
+let currentNickname = "";
+
+function saveAquaData() {
+    localStorage.setItem('aquaPieceData', JSON.stringify(aquaData));
+}
 
 const PIECE_CONFIG = {
     "azarasi": { w: 5, h: 3 }, "chouchin": { w: 3, h: 2 }, "ei": { w: 4, h: 4 },
@@ -354,13 +573,13 @@ const PIECE_CONFIG = {
     "rakko": { w: 4, h: 2 }, "same": { w: 4, h: 3 }, "todo": { w: 4, h: 3 },
     "tako": { w: 3, h: 2 }, "kujira": { w: 4, h: 2 }, "kurione": { w: 2, h: 3 },
     "kani": { w: 5, h: 3 }, "tatunootoshigo": { w: 2, h: 4 }, "chinanago": { w: 2, h: 4 },
-    "kurage": { w: 2, h: 2 }, "fugu": { w: 3, h: 2 }, "yadokari": { w: 1, h: 1 },
-    "hitode": { w: 3, h: 3 }, "ebi": { w: 3, h: 2 }
+    "kurage": { w: 2, h: 2 }, "fugu": { w: 3, h: 2 }, "yadokari": { w: 2, h: 2 },
+    "hitode": { w: 3, h: 3 }, "ebi": { w: 3, h: 2 }, "karei": { w: 3, h: 3 }, "uni": { w: 1, h: 1 }
 };
 
 const STAGE_CONFIG = {
     1: { grid: 4, pieces: ["tako", "kujira", "kurione"] },
-    2: { grid: 7, pieces: ["kani", "tatunootoshigo", "chinanago", "kurage", "yadokari", "fugu", "hitode", "ebi"] },
+    2: { grid: 7, pieces: ["kani", "tatunootoshigo", "chinanago", "kurage", "yadokari", "fugu", "hitode", "ebi", "karei", "uni"] },
     3: { grid: 10, pieces: ["azarasi", "chouchin", "ei", "shachi", "jinbei", "kame", "kapibara", "manbo", "pengin", "rakko", "same", "todo"] }
 };
 
@@ -369,6 +588,42 @@ let currentStageNum = 1;
 function playSound(type) {
     const dataUrl = type === 'place' ? ASSETS_DATA["グラスを置く"] : ASSETS_DATA["ロッカーを開ける1"];
     if (dataUrl) new Audio(dataUrl).play().catch(e => {});
+}
+
+// Nickname Registration Functions
+function showNicknameModal(cancelable) {
+    const modal = document.getElementById('nickname-modal');
+    const closeBtn = document.getElementById('close-profile-btn');
+    const input = document.getElementById('nickname-input-field');
+    const profileListSection = document.getElementById('profile-list-section');
+    const tagsContainer = document.getElementById('profile-tags-container');
+    
+    input.value = "";
+    
+    if (cancelable) {
+        closeBtn.style.display = 'block';
+    } else {
+        closeBtn.style.display = 'none';
+    }
+    
+    // Populate registered profiles
+    tagsContainer.innerHTML = "";
+    const nicknames = Object.keys(aquaData.profiles);
+    if (nicknames.length > 0) {
+        profileListSection.style.display = 'block';
+        nicknames.forEach(name => {
+            const tag = document.createElement('div');
+            tag.className = 'profile-tag';
+            tag.innerHTML = `👤 ${name}`;
+            tag.onclick = () => selectProfile(name);
+            tagsContainer.appendChild(tag);
+        });
+    } else {
+        profileListSection.style.display = 'none';
+    }
+    
+    modal.style.display = 'flex';
+    input.focus();
 }
 
 // Logo Puzzle Logic
@@ -423,7 +678,7 @@ function makeLogoDraggable(elm, container) {
                     const r1 = elm.getBoundingClientRect(), r2 = waku.getBoundingClientRect();
                     const cx1 = r1.left + r1.width/2, cy1 = r1.top + r1.height/2;
                     const cx2 = r2.left + r2.width/2, cy2 = r2.top + r2.height/2;
-                    if (Math.sqrt(Math.pow(cx1-cx2,2)+Math.pow(cy1-cy2,2)) < 60) {
+                    if (Math.sqrt(Math.pow(cx1-cx2,2)+Math.pow(cy1-cy2,2)) < 80) {
                         container.appendChild(elm);
                         const cRect = container.getBoundingClientRect();
                         elm.style.left = (r2.left - cRect.left) + "px";
@@ -446,6 +701,35 @@ function makeLogoDraggable(elm, container) {
             elm.style.left = (elm.offsetLeft - pos1) + "px";
         };
     };
+}
+
+function closeNicknameModal() {
+    document.getElementById('nickname-modal').style.display = 'none';
+}
+
+function submitNickname() {
+    const input = document.getElementById('nickname-input-field');
+    const name = input.value.trim();
+    if (!name) {
+        alert("ニックネームを入力してください。");
+        return;
+    }
+    selectProfile(name);
+}
+
+function selectProfile(name) {
+    currentNickname = name;
+    
+    // Ensure profile exists
+    if (!aquaData.profiles[currentNickname]) {
+        aquaData.profiles[currentNickname] = { unlocked: [] };
+    }
+    
+    saveAquaData();
+    
+    // Update UI
+    document.getElementById('current-user-display').textContent = currentNickname;
+    closeNicknameModal();
 }
 
 function showStageSelection() {
@@ -486,67 +770,16 @@ function backToSelection() {
     setTimeout(() => wave.classList.remove('active'), 800);
 }
 
-// Aquatic World & Encyclopedia Logic
+// Encyclopedia Logic
 const ENCY_PIECES = Object.keys(PIECE_CONFIG);
-let worldPieces = [], worldDecorations = [], worldActiveItem = null, worldBubbles = [];
-
-class WorldCreature {
-    constructor(name, x, y) {
-        this.name = name; this.img = new Image(); this.img.src = ASSETS_DATA[name];
-        this.x = x || Math.random() * (window.innerWidth * 0.6);
-        this.y = y || Math.random() * window.innerHeight;
-        this.angle = Math.random() * Math.PI * 2;
-        this.speed = 0.5 + Math.random() * 1.0;
-        this.turnSpeed = (Math.random() - 0.5) * 0.02;
-        this.isAmphibious = ["pengin", "kapibara", "azarasi", "todo", "rakko", "kame"].includes(name);
-    }
-    update() {
-        this.angle += this.turnSpeed;
-        if (Math.random() < 0.01) this.turnSpeed = (Math.random() - 0.5) * 0.02;
-        this.x += Math.cos(this.angle) * this.speed;
-        this.y += Math.sin(this.angle) * this.speed;
-        
-        const shoreX = window.innerWidth * 0.65;
-        if (this.isAmphibious) {
-            if (this.x < 50 || this.x > window.innerWidth - 50) this.angle = Math.PI - this.angle;
-            if (this.y < 50 || this.y > window.innerHeight - 50) this.angle = -this.angle;
-        } else {
-            if (this.x < 50 || this.x > shoreX - 50) this.angle = Math.PI - this.angle;
-            if (this.y < 50 || this.y > window.innerHeight - 50) this.angle = -this.angle;
-        }
-    }
-    draw(ctx) {
-        ctx.save(); ctx.translate(this.x, this.y);
-        const depthFactor = this.y / window.innerHeight;
-        if (this.x < window.innerWidth * 0.65) {
-            const darken = Math.floor(depthFactor * 100);
-            ctx.filter = `brightness(${100 - darken}%)`;
-        }
-        ctx.rotate(this.angle + (Math.cos(this.angle) < 0 ? Math.PI : 0));
-        if (Math.cos(this.angle) < 0) ctx.scale(1, -1);
-        ctx.drawImage(this.img, -40, -40, 80, 80);
-        ctx.restore();
-    }
-    isHit(mx, my) { return Math.sqrt(Math.pow(this.x - mx, 2) + Math.pow(this.y - my, 2)) < 40; }
-}
-
-class WorldDecoration {
-    constructor(type, x, y) {
-        this.type = type; this.x = x; this.y = y; this.dragging = false;
-        this.emoji = { 'plant': '🌿', 'moss': '🟢', 'rock': '🪨', 'wood': '🪵', 'grass': '🌱' }[type];
-    }
-    draw(ctx) {
-        ctx.font = '50px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(this.emoji, this.x, this.y);
-    }
-    isHit(mx, my) { return Math.sqrt(Math.pow(this.x - mx, 2) + Math.pow(this.y - my, 2)) < 30; }
-}
 
 function showEncyclopedia() {
     const grid = document.getElementById('ency-grid');
     grid.innerHTML = '';
+    const profile = aquaData.profiles[currentNickname] || { unlocked: [] };
+    
     ENCY_PIECES.forEach(name => {
-        const isUnlocked = userData.unlocked.includes(name);
+        const isUnlocked = profile.unlocked.includes(name);
         const card = document.createElement('div'); card.className = 'ency-card';
         card.innerHTML = `<img src="${ASSETS_DATA[name]}" class="ency-img ${isUnlocked ? '' : 'locked'}">
                           <div class="ency-name ${isUnlocked ? '' : 'locked'}">${isUnlocked ? name : '???'}</div>`;
@@ -556,127 +789,96 @@ function showEncyclopedia() {
 }
 function closeEncyclopedia() { document.getElementById('encyclopedia').style.display = 'none'; }
 
-function showAquaticWorld() {
-    document.getElementById('aquatic-world').style.display = 'flex';
-    document.getElementById('coin-display').innerText = `${userData.coins} Coins`;
-    const canvas = document.getElementById('worldCanvas');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    
-    worldPieces = userData.worldCreatures.map(c => new WorldCreature(c.name, c.x, c.y));
-    worldDecorations = userData.worldDecorations.map(d => new WorldDecoration(d.type, d.x, d.y));
-    worldBubbles = [];
-    
-    requestAnimationFrame(worldLoop);
-}
+// Piece Selector (on stage clear)
+function showPieceSelector() {
+    const config = STAGE_CONFIG[currentStageNum];
+    const stagePieces = config.pieces;
+    const grid = document.getElementById('piece-selector-grid');
+    grid.innerHTML = '';
+    document.getElementById('piece-selector-section').style.display = 'flex';
+    document.getElementById('piece-selected-msg').style.display = 'none';
+    document.getElementById('to-selection-btn').style.display = 'none';
 
-function worldLoop(time) {
-    const canvas = document.getElementById('worldCanvas');
-    if (!canvas || document.getElementById('aquatic-world').style.display === 'none') return;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width, h = canvas.height;
-    const shoreX = w * 0.65;
+    const profile = aquaData.profiles[currentNickname] || { unlocked: [] };
 
-    const waterGrad = ctx.createLinearGradient(0, 0, 0, h);
-    waterGrad.addColorStop(0, '#7dd3fc');
-    waterGrad.addColorStop(0.5, '#0ea5e9');
-    waterGrad.addColorStop(1, '#0c4a6e');
-    ctx.fillStyle = waterGrad; ctx.fillRect(0, 0, shoreX, h);
-
-    ctx.fillStyle = '#ecfccb'; ctx.fillRect(shoreX, 0, w - shoreX, h);
-
-    const shoreGrad = ctx.createLinearGradient(shoreX - 50, 0, shoreX + 50, 0);
-    shoreGrad.addColorStop(0, 'rgba(125, 211, 252, 0)');
-    shoreGrad.addColorStop(0.5, '#fef08a');
-    shoreGrad.addColorStop(1, 'rgba(236, 252, 203, 0)');
-    ctx.fillStyle = shoreGrad; ctx.fillRect(shoreX - 50, 0, 100, h);
-
-    ctx.save(); ctx.beginPath(); ctx.moveTo(0, 40);
-    for (let x = 0; x <= shoreX; x += 10) ctx.lineTo(x, 40 + Math.sin(x * 0.02 + time * 0.002) * 10);
-    ctx.lineTo(shoreX, 0); ctx.lineTo(0, 0);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)'; ctx.fill(); ctx.restore();
-
-    ctx.font = '60px Arial';
-    ctx.fillText('🌳', shoreX + 100, 150); ctx.fillText('🌲', w - 100, 300);
-    ctx.fillText('🌳', shoreX + 150, h - 200); ctx.fillText('🌻', w - 150, h - 100);
-    ctx.fillText('🌱', shoreX + 50, 400);
-
-    if (Math.random() < 0.05) worldBubbles.push({
-        x: Math.random() * (shoreX - 20), y: h + 20, 
-        v: 1 + Math.random() * 2, r: 2 + Math.random() * 4, 
-        o: 0.1 + Math.random() * 0.3
+    stagePieces.forEach(name => {
+        const alreadyOwned = profile.unlocked.includes(name);
+        const item = document.createElement('div');
+        item.className = 'piece-choice' + (alreadyOwned ? ' already-unlocked' : '');
+        item.innerHTML = `<img src="${ASSETS_DATA[name]}"><span>${alreadyOwned ? '✓ 登録済み' : name}</span>`;
+        if (!alreadyOwned) {
+            item.onclick = () => selectPieceForEncy(name);
+        }
+        grid.appendChild(item);
     });
-    ctx.save();
-    for (let i = worldBubbles.length - 1; i >= 0; i--) {
-        const b = worldBubbles[i]; b.y -= b.v;
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${b.o})`; ctx.fill();
-        if (b.y < -20) worldBubbles.splice(i, 1);
-    }
-    ctx.restore();
 
-    if (worldPieces.length === 0) {
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Arial'; ctx.textAlign = 'center';
-        ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(0,0,0,0.2)';
-        ctx.fillText('パズルをクリアして、自分だけのアクアワールドを作ろう！', w/2, h/2);
-        ctx.shadowBlur = 0;
+    // If all pieces already unlocked, skip selector
+    const allOwned = stagePieces.every(n => profile.unlocked.includes(n));
+    if (allOwned) {
+        document.getElementById('piece-selector-section').style.display = 'none';
+        document.getElementById('to-selection-btn').style.display = 'inline-block';
     }
-
-    worldDecorations.forEach(d => d.draw(ctx));
-    worldPieces.forEach(p => { p.update(); p.draw(ctx); });
-    
-    requestAnimationFrame(worldLoop);
 }
 
-function backToSelectionFromWorld() {
-    userData.worldDecorations = worldDecorations.map(d => ({ type: d.type, x: d.x, y: d.y }));
-    userData.worldCreatures = worldPieces.map(p => ({ name: p.name, x: p.x, y: p.y }));
-    saveUserData();
-    document.getElementById('aquatic-world').style.display = 'none';
+function selectPieceForEncy(name) {
+    const profile = aquaData.profiles[currentNickname];
+    if (profile && !profile.unlocked.includes(name)) {
+        profile.unlocked.push(name);
+    }
+    saveAquaData();
+    // Update grid: disable all choices
+    const items = document.querySelectorAll('.piece-choice');
+    items.forEach(item => {
+        item.classList.add('already-unlocked');
+        item.onclick = null;
+        const span = item.querySelector('span');
+        if (span && span.textContent === name) span.textContent = '✓ 登録済み';
+    });
+    const msg = document.getElementById('piece-selected-msg');
+    msg.textContent = `「${name}」を図鑑に登録しました！`;
+    msg.style.display = 'block';
+    document.getElementById('to-selection-btn').style.display = 'inline-block';
 }
 
-function toggleShop() { document.getElementById('shop-drawer').classList.toggle('active'); }
-
-function buyDecoration(type) {
-    const prices = { 'plant': 20, 'moss': 15, 'rock': 30, 'wood': 50, 'grass': 10 };
-    if (userData.coins >= prices[type]) {
-        userData.coins -= prices[type];
-        document.getElementById('coin-display').innerText = `${userData.coins} Coins`;
-        worldDecorations.push(new WorldDecoration(type, window.innerWidth/2, window.innerHeight/2));
-        saveUserData();
-    } else { alert('コインが足りません！'); }
+// Rankings Logic
+function showRankings() {
+    for (let s = 1; s <= 3; s++) {
+        const list = document.getElementById(`ranking-list-${s}`);
+        list.innerHTML = '';
+        const entries = aquaData.globalRankings[s] || [];
+        if (entries.length === 0) {
+            list.innerHTML = '<li style="list-style:none; color:#94a3b8; text-align:center; padding: 20px 0;">記録なし</li>';
+        } else {
+            entries.forEach((entry, i) => {
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.style.padding = '8px 12px';
+                li.style.borderRadius = '10px';
+                li.style.marginBottom = '8px';
+                li.style.background = 'rgba(240, 249, 255, 0.5)';
+                li.style.border = '1px solid #bae6fd';
+                
+                let medal = "";
+                if (i === 0) medal = "👑 ";
+                else if (i === 1) medal = "🥈 ";
+                else if (i === 2) medal = "🥉 ";
+                
+                li.innerHTML = `
+                    <span style="font-weight: ${i === 0 ? 'bold' : 'normal'}; color: ${i === 0 ? '#eab308' : '#334155'}">
+                        ${medal}${i+1}. ${entry.nickname}
+                    </span>
+                    <span style="font-family: monospace; font-weight: bold; color: #0ea5e9;">
+                        ${formatTime(entry.time)}
+                    </span>
+                `;
+                list.appendChild(li);
+            });
+        }
+    }
+    document.getElementById('rankings-overlay').style.display = 'flex';
 }
-
-// World Interaction
-const wCanvas = document.getElementById('worldCanvas');
-wCanvas.addEventListener('mousedown', e => {
-    const mx = e.clientX, my = e.clientY;
-    if (e.button === 0) { // Left Click
-        for (let i = worldDecorations.length - 1; i >= 0; i--) {
-            if (worldDecorations[i].isHit(mx, my)) {
-                worldActiveItem = worldDecorations[i]; worldActiveItem.dragging = true;
-                worldDecorations.push(worldDecorations.splice(i, 1)[0]); break;
-            }
-        }
-    } else if (e.button === 2) { // Right Click to Remove
-        for (let i = worldDecorations.length - 1; i >= 0; i--) {
-            if (worldDecorations[i].isHit(mx, my)) {
-                worldDecorations.splice(i, 1); return;
-            }
-        }
-        for (let i = worldPieces.length - 1; i >= 0; i--) {
-            if (worldPieces[i].isHit(mx, my)) {
-                worldPieces.splice(i, 1); return;
-            }
-        }
-    }
-});
-window.addEventListener('mousemove', e => {
-    if (worldActiveItem && worldActiveItem.dragging) {
-        worldActiveItem.x = e.clientX; worldActiveItem.y = e.clientY;
-    }
-});
-window.addEventListener('mouseup', () => { if (worldActiveItem) { worldActiveItem.dragging = false; worldActiveItem = null; } });
-wCanvas.addEventListener("contextmenu", e => e.preventDefault());
+function closeRankings() { document.getElementById('rankings-overlay').style.display = 'none'; }
 
 // Main Game Logic
 class Particle {
@@ -877,33 +1079,60 @@ function gameLoop() {
 
     pieces.forEach(p => p.draw(ctx));
     particles = particles.filter(p => p.life > 0); particles.forEach(p => { p.update(); p.draw(ctx); });
+    
     if (pieces.length > 0 && !isCleared && checkWin()) {
         isCleared = true;
         const elapsed = Date.now() - startTime;
-        const coins = Math.max(10, 300 - Math.floor(elapsed / 1000) * 2);
-        userData.coins += coins;
-        saveUserData();
+        
+        // Save to rankings
+        if (!aquaData.globalRankings[currentStageNum]) aquaData.globalRankings[currentStageNum] = [];
+        aquaData.globalRankings[currentStageNum].push({ nickname: currentNickname, time: elapsed });
+        aquaData.globalRankings[currentStageNum].sort((a, b) => a.time - b.time);
+        aquaData.globalRankings[currentStageNum] = aquaData.globalRankings[currentStageNum].slice(0, 5);
+        
+        saveAquaData();
 
-        document.getElementById('reward-text').innerText = `獲得コイン: ${coins}c (タイム: ${formatTime(elapsed)})`;
-        const options = document.getElementById('invite-options');
-        options.innerHTML = '';
-        STAGE_CONFIG[currentStageNum].pieces.forEach(name => {
-            const item = document.createElement('div'); item.className = 'invite-item';
-            item.innerHTML = `<img src="${ASSETS_DATA[name]}"><span>${name}</span>`;
-            item.onclick = () => inviteCreature(name);
-            options.appendChild(item);
+        // Update clear time text
+        document.getElementById('clear-time-text').innerText = `タイム: ${formatTime(elapsed)}`;
+        
+        // Populate rankings list
+        const list = document.getElementById('clear-ranking-list');
+        list.innerHTML = '';
+        aquaData.globalRankings[currentStageNum].forEach((entry, i) => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.padding = '8px 14px';
+            li.style.borderRadius = '10px';
+            li.style.margin = '6px 0';
+            
+            if (entry.time === elapsed && entry.nickname === currentNickname) {
+                li.style.background = 'rgba(14, 165, 233, 0.1)';
+                li.style.border = '1px solid #bae6fd';
+            }
+            
+            let medal = "";
+            if (i === 0) medal = "👑 ";
+            else if (i === 1) medal = "🥈 ";
+            else if (i === 2) medal = "🥉 ";
+            
+            li.innerHTML = `
+                <span style="font-weight: ${entry.time === elapsed && entry.nickname === currentNickname ? 'bold' : 'normal'}; color: ${i === 0 ? '#eab308' : '#334155'}">
+                    ${medal}${i+1}. ${entry.nickname}
+                </span>
+                <span style="font-family: monospace; font-weight: bold; color: #0ea5e9;">
+                    ${formatTime(entry.time)}
+                </span>
+            `;
+            list.appendChild(li);
         });
-        document.getElementById('invite-overlay').style.display = 'flex';
+
+        document.getElementById('overlay').style.display = 'flex';
+        showPieceSelector();
+        playSound('place');
+        for (let i=0; i<30; i++) particles.push(new Particle(canvas.width/2, canvas.height/2));
     }
     requestAnimationFrame(gameLoop);
-}
-
-function inviteCreature(name) {
-    if (!userData.unlocked.includes(name)) userData.unlocked.push(name);
-    userData.worldCreatures.push({ name, x: Math.random()*window.innerWidth, y: window.innerHeight*0.6 });
-    saveUserData();
-    document.getElementById('invite-overlay').style.display = 'none';
-    backToSelection();
 }
 
 canvas.addEventListener("mousedown", e => {
@@ -937,10 +1166,12 @@ window.addEventListener("mouseup", () => {
 });
 canvas.addEventListener("contextmenu", e => e.preventDefault());
 
-// Background Bubbles
+// Background Bubbles and Swimming Gray Pieces
 const bCanvas = document.getElementById('bubbleCanvas');
 const bctx = bCanvas.getContext('2d');
 let bubbles = [];
+let swimmingPieces = [];
+
 class Bubble {
     constructor() { this.reset(); this.y = Math.random() * window.innerHeight; }
     reset() {
@@ -950,22 +1181,82 @@ class Bubble {
     update() { this.y -= this.v; if (this.y < -50) this.reset(); }
     draw() { bctx.beginPath(); bctx.arc(this.x, this.y, this.r, 0, Math.PI*2); bctx.fillStyle = `rgba(125, 211, 252, ${this.opacity})`; bctx.fill(); }
 }
+
+class SwimmingPiece {
+    constructor() {
+        this.reset(true);
+    }
+    reset(initial = false) {
+        const pieceNames = Object.keys(PIECE_CONFIG);
+        this.name = pieceNames[Math.floor(Math.random() * pieceNames.length)];
+        this.img = new Image();
+        this.img.src = ASSETS_DATA[this.name];
+        
+        // Uniform size for gray swimming pieces
+        this.size = 90; 
+        
+        // Initial spawn coordinates (slow swimming from left to right)
+        this.x = initial ? Math.random() * window.innerWidth : -this.size - 50;
+        this.y = Math.random() * (window.innerHeight - this.size * 2) + this.size;
+        
+        // Slow speed
+        this.vx = Math.random() * 0.4 + 0.15; 
+        
+        // Swaying variables (sine wave)
+        this.angle = Math.random() * Math.PI * 2;
+        this.angleSpeed = Math.random() * 0.02 + 0.008; 
+        this.swayAmplitude = Math.random() * 0.6 + 0.3; 
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationDirection = Math.random() < 0.5 ? -1 : 1;
+        this.rotSpeed = Math.random() * 0.005 + 0.002;
+    }
+    update() {
+        this.x += this.vx;
+        this.angle += this.angleSpeed;
+        this.y += Math.sin(this.angle) * this.swayAmplitude;
+        this.rotation += this.rotSpeed * this.rotationDirection;
+        
+        if (this.x > window.innerWidth + 50) {
+            this.reset(false);
+        }
+    }
+    draw(ctx) {
+        if (!this.img.complete) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        // Pure grayscale filter with low opacity for subtle background silhouette swimming
+        ctx.filter = 'grayscale(100%) opacity(0.18)'; 
+        ctx.drawImage(this.img, -this.size/2, -this.size/2, this.size, this.size);
+        ctx.restore();
+    }
+}
+
 function animateBubbles() {
     bCanvas.width = window.innerWidth; bCanvas.height = window.innerHeight;
     if (bubbles.length === 0) for(let i=0; i<40; i++) bubbles.push(new Bubble());
-    bctx.clearRect(0,0,bCanvas.width,bCanvas.height); bubbles.forEach(b => { b.update(); b.draw(); });
+    if (swimmingPieces.length === 0) {
+        for(let i=0; i<6; i++) swimmingPieces.push(new SwimmingPiece());
+    }
+    bctx.clearRect(0,0,bCanvas.width,bCanvas.height);
+    
+    // Draw swimming pieces behind the bubbles
+    swimmingPieces.forEach(p => { p.update(); p.draw(bctx); });
+    bubbles.forEach(b => { b.update(); b.draw(); });
+    
     requestAnimationFrame(animateBubbles);
 }
 
 initLogoPuzzle();
 animateBubbles();
+showNicknameModal(false);
 </script>
 </body>
 </html>"""
 
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(full_html)
-    print(f"Fixed logo shifting and enabled stage selection in {html_path}.")
+    print(f"Removed Aquatic World and added Stage Clear Time Rankings in {html_path}.")
 
 if __name__ == "__main__":
     update_puzzle_html(r"C:\\Users\\藤本　羽奏\\puzzle")
