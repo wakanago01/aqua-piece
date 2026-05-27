@@ -130,7 +130,7 @@ def update_puzzle_html(directory):
         #wave-transition {
             position: fixed; top: 100%; left: 0; width: 100%; height: 120%;
             background: #7dd3fc; z-index: 20000;
-            transition: top 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: top 1.5s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
             display: none;
         }
@@ -410,15 +410,16 @@ def update_puzzle_html(directory):
 <body>
 
 <canvas id="bubbleCanvas"></canvas>
+<canvas id="swimCanvas"></canvas>
 
 <!-- Nickname Modal -->
 <div id="nickname-modal">
     <div class="nickname-card">
-        <button id="close-profile-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; display: none;" onclick="closeNicknameModal()">✕</button>
-        <h2>👤 プレイヤー登録</h2>
+        <button id="close-profile-btn" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; display: none;" onclick="playSound('decision'); closeNicknameModal()">✕</button>
+        <h2><span class="fish-emoji">🐟</span> プレイヤー登録 <span class="fish-emoji flip">🐟</span></h2>
         <p style="color:#64748b; font-size:14px; margin:0;">ニックネームを入力して、パズルの世界へ冒険に出かけよう！</p>
         <input type="text" id="nickname-input-field" class="nickname-input" placeholder="ニックネームを入力..." maxlength="10">
-        <button class="nickname-submit" onclick="submitNickname()">冒険をはじめる</button>
+        <button class="nickname-submit" onclick="playSound('decision'); submitNickname()">冒険をはじめる</button>
         
         <div id="profile-list-section" class="profile-list-section" style="display: none;">
             <h3>または、登録済みのプレイヤーを選択：</h3>
@@ -430,15 +431,15 @@ def update_puzzle_html(directory):
 <div id="title-screen">
     <div id="title-content">
         <div id="title-logo"></div>
-        <button id="start-button" onclick="showStageSelection()">START GAME</button>
+        <button id="start-button" onclick="playSound('decision'); showStageSelection()">START GAME</button>
     </div>
 </div>
 
 <div id="stage-selection">
     <div style="display:flex; gap:15px; position:absolute; top:30px; right:30px; align-items: center; z-index: 16000;">
-        <div class="profile-indicator" onclick="showNicknameModal(true)">👤 <span id="current-user-display">ゲスト</span></div>
-        <button class="ui-btn" onclick="showEncyclopedia()">図鑑</button>
-        <button class="ui-btn" onclick="showRankings()">ランキング</button>
+        <div class="profile-indicator" onclick="playSound('decision'); showNicknameModal(true)">👤 <span id="current-user-display">ゲスト</span></div>
+        <button class="ui-btn" onclick="playSound('decision'); showEncyclopedia()">図鑑</button>
+        <button class="ui-btn" onclick="playSound('decision'); showRankings()">ランキング</button>
     </div>
     <h1>ステージ選択</h1>
     <div class="stage-buttons">
@@ -451,7 +452,7 @@ def update_puzzle_html(directory):
 <div id="encyclopedia">
     <div style="width:1000px; display:flex; justify-content:space-between; align-items:center;">
         <h1 style="color:#0369a1; margin:0;">生物図鑑</h1>
-        <button class="ui-btn" onclick="closeEncyclopedia()">戻る</button>
+        <button class="ui-btn" onclick="playSound('decision'); closeEncyclopedia()">戻る</button>
     </div>
     <div id="ency-grid"></div>
 </div>
@@ -459,7 +460,7 @@ def update_puzzle_html(directory):
 <div id="rankings-overlay">
     <div style="width:1220px; display:flex; justify-content:space-between; align-items:center; margin-bottom: 40px;">
         <h1 style="color:#0369a1; margin:0; font-size: 48px;">クリア時間ランキング</h1>
-        <button class="ui-btn" onclick="closeRankings()" style="font-size: 20px; padding: 14px 40px; border-radius: 24px;">戻る</button>
+        <button class="ui-btn" onclick="playSound('decision'); closeRankings()" style="font-size: 20px; padding: 14px 40px; border-radius: 24px;">戻る</button>
     </div>
     <div style="display: flex; gap: 40px; width: 1220px; justify-content: space-between;">
         <div class="ranking-column">
@@ -481,7 +482,7 @@ def update_puzzle_html(directory):
 
 <div id="game-ui">
     <div id="header">
-        <button id="back-button" onclick="backToSelection()">戻る</button>
+        <button id="back-button" onclick="playSound('decision'); backToSelection()">戻る</button>
         <h1>AquaPiece</h1>
         <div id="timer-display">時間: 00:00</div>
     </div>
@@ -586,13 +587,30 @@ const STAGE_CONFIG = {
 let currentStageNum = 1;
 
 function playSound(type) {
-    const dataUrl = type === 'place' ? ASSETS_DATA["グラスを置く"] : ASSETS_DATA["ロッカーを開ける1"];
-    if (dataUrl) new Audio(dataUrl).play().catch(e => {});
+    let dataUrl;
+    if (type === 'place') {
+        dataUrl = ASSETS_DATA["グラスを置く"];
+    } else if (type === 'rotate') {
+        dataUrl = ASSETS_DATA["ロッカーを開ける1"];
+    } else if (type === 'decision') {
+        dataUrl = ASSETS_DATA["決定ボタンを押す42"];
+    } else if (type === 'transition') {
+        const coastal = ["海岸1", "海岸2", "海岸3", "海岸4"];
+        const chosen = coastal[Math.floor(Math.random() * coastal.length)];
+        dataUrl = ASSETS_DATA[chosen];
+    }
+    
+    if (dataUrl) {
+        const audio = new Audio(dataUrl);
+        if (type === 'transition') audio.volume = 1.0;
+        audio.play().catch(e => { console.error("Audio playback failed:", e); });
+    }
 }
 
 // Nickname Registration Functions
 function showNicknameModal(cancelable) {
     const modal = document.getElementById('nickname-modal');
+    const swimCanvas = document.getElementById('swimCanvas');
     const closeBtn = document.getElementById('close-profile-btn');
     const input = document.getElementById('nickname-input-field');
     const profileListSection = document.getElementById('profile-list-section');
@@ -623,6 +641,7 @@ function showNicknameModal(cancelable) {
     }
     
     modal.style.display = 'flex';
+    if (swimCanvas) swimCanvas.style.display = 'block';
     input.focus();
 }
 
@@ -705,6 +724,8 @@ function makeLogoDraggable(elm, container) {
 
 function closeNicknameModal() {
     document.getElementById('nickname-modal').style.display = 'none';
+    const swimCanvas = document.getElementById('swimCanvas');
+    if (swimCanvas) swimCanvas.style.display = 'none';
 }
 
 function submitNickname() {
@@ -735,16 +756,16 @@ function selectProfile(name) {
 function showStageSelection() {
     const wave = document.getElementById('wave-transition');
     wave.style.display = 'block'; wave.offsetHeight; wave.classList.add('active');
-    playSound('rotate');
+    playSound('transition');
     setTimeout(() => {
         document.getElementById('title-screen').style.display = 'none';
         document.getElementById('stage-selection').style.display = 'flex';
-    }, 400);
-    setTimeout(() => wave.classList.remove('active'), 800);
+    }, 750);
+    setTimeout(() => wave.classList.remove('active'), 1500);
 }
 
 function startStage(num) {
-    playSound('rotate');
+    playSound('transition');
     const wave = document.getElementById('wave-transition');
     wave.style.display = 'block'; wave.offsetHeight; wave.classList.add('active');
     setTimeout(() => {
@@ -752,12 +773,12 @@ function startStage(num) {
         document.getElementById('game-ui').style.display = 'flex';
         setTimeout(() => document.getElementById('game-ui').style.opacity = '1', 50);
         init(num);
-    }, 400);
-    setTimeout(() => wave.classList.remove('active'), 800);
+    }, 750);
+    setTimeout(() => wave.classList.remove('active'), 1500);
 }
 
 function backToSelection() {
-    playSound('rotate');
+    playSound('transition');
     const wave = document.getElementById('wave-transition');
     wave.style.display = 'block'; wave.offsetHeight; wave.classList.add('active');
     setTimeout(() => {
@@ -766,8 +787,8 @@ function backToSelection() {
         document.getElementById('game-ui').style.display = 'none';
         document.getElementById('stage-selection').style.display = 'flex';
         document.getElementById("overlay").style.display = "none";
-    }, 400);
-    setTimeout(() => wave.classList.remove('active'), 800);
+    }, 750);
+    setTimeout(() => wave.classList.remove('active'), 1500);
 }
 
 // Encyclopedia Logic
@@ -1169,8 +1190,11 @@ canvas.addEventListener("contextmenu", e => e.preventDefault());
 // Background Bubbles and Swimming Gray Pieces
 const bCanvas = document.getElementById('bubbleCanvas');
 const bctx = bCanvas.getContext('2d');
+const sCanvas = document.getElementById('swimCanvas');
+const sctx = sCanvas.getContext('2d');
 let bubbles = [];
 let swimmingPieces = [];
+let modalPieces = [];
 
 class Bubble {
     constructor() { this.reset(); this.y = Math.random() * window.innerHeight; }
@@ -1183,24 +1207,38 @@ class Bubble {
 }
 
 class SwimmingPiece {
-    constructor() {
+    constructor(isModal = false) {
+        this.isModal = isModal;
         this.reset(true);
     }
     reset(initial = false) {
-        const pieceNames = Object.keys(PIECE_CONFIG);
+        let pieceNames;
+        if (this.isModal) {
+            const profile = (currentNickname && aquaData.profiles[currentNickname]) ? aquaData.profiles[currentNickname] : { unlocked: [] };
+            pieceNames = profile.unlocked;
+        } else {
+            pieceNames = Object.keys(PIECE_CONFIG);
+        }
+
+        if (!pieceNames || pieceNames.length === 0) {
+            this.name = "";
+            this.img = null;
+            return;
+        }
+
         this.name = pieceNames[Math.floor(Math.random() * pieceNames.length)];
         this.img = new Image();
         this.img.src = ASSETS_DATA[this.name];
         
         // Uniform size for gray swimming pieces
-        this.size = 90; 
+        this.size = this.isModal ? 120 : 90; 
         
         // Initial spawn coordinates (slow swimming from left to right)
         this.x = initial ? Math.random() * window.innerWidth : -this.size - 50;
         this.y = Math.random() * (window.innerHeight - this.size * 2) + this.size;
         
         // Slow speed
-        this.vx = Math.random() * 0.4 + 0.15; 
+        this.vx = (Math.random() * 0.4 + 0.15) * (this.isModal ? 0.7 : 1); 
         
         // Swaying variables (sine wave)
         this.angle = Math.random() * Math.PI * 2;
@@ -1211,6 +1249,10 @@ class SwimmingPiece {
         this.rotSpeed = Math.random() * 0.005 + 0.002;
     }
     update() {
+        if (!this.img) {
+            this.reset(false);
+            return;
+        }
         this.x += this.vx;
         this.angle += this.angleSpeed;
         this.y += Math.sin(this.angle) * this.swayAmplitude;
@@ -1221,12 +1263,16 @@ class SwimmingPiece {
         }
     }
     draw(ctx) {
-        if (!this.img.complete) return;
+        if (!this.img || !this.img.complete) return;
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
-        // Pure grayscale filter with low opacity for subtle background silhouette swimming
-        ctx.filter = 'grayscale(100%) opacity(0.18)'; 
+        if (this.isModal) {
+            ctx.filter = 'opacity(0.4) brightness(1.1)';
+        } else {
+            // Pure grayscale filter with low opacity for subtle background silhouette swimming
+            ctx.filter = 'grayscale(100%) opacity(0.18)'; 
+        }
         ctx.drawImage(this.img, -this.size/2, -this.size/2, this.size, this.size);
         ctx.restore();
     }
@@ -1234,15 +1280,36 @@ class SwimmingPiece {
 
 function animateBubbles() {
     bCanvas.width = window.innerWidth; bCanvas.height = window.innerHeight;
+    sCanvas.width = window.innerWidth; sCanvas.height = window.innerHeight;
+    
     if (bubbles.length === 0) for(let i=0; i<40; i++) bubbles.push(new Bubble());
     if (swimmingPieces.length === 0) {
-        for(let i=0; i<6; i++) swimmingPieces.push(new SwimmingPiece());
+        for(let i=0; i<6; i++) swimmingPieces.push(new SwimmingPiece(false));
     }
+    if (modalPieces.length === 0) {
+        for(let i=0; i<8; i++) modalPieces.push(new SwimmingPiece(true));
+    }
+    
     bctx.clearRect(0,0,bCanvas.width,bCanvas.height);
+    sctx.clearRect(0,0,sCanvas.width,sCanvas.height);
     
     // Draw swimming pieces behind the bubbles
     swimmingPieces.forEach(p => { p.update(); p.draw(bctx); });
     bubbles.forEach(b => { b.update(); b.draw(); });
+    
+    // Draw modal background pieces if visible
+    if (sCanvas.style.display === 'block') {
+        const profile = (currentNickname && aquaData.profiles[currentNickname]) ? aquaData.profiles[currentNickname] : { unlocked: [] };
+        if (profile.unlocked.length > 0) {
+            modalPieces.forEach(p => {
+                if (!p.img && profile.unlocked.length > 0) p.reset(true);
+                p.update(); p.draw(sctx);
+            });
+        }
+    } else {
+        // Clear images if not visible to force re-selection based on profile next time
+        modalPieces.forEach(p => { p.img = null; });
+    }
     
     requestAnimationFrame(animateBubbles);
 }
